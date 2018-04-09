@@ -3,6 +3,7 @@ import sys
 import random
 import mathutils
 import math
+import time
 from mathutils import (Vector, Matrix)
 
 #Add-on header info
@@ -143,7 +144,6 @@ class MyRootTree:
         self.clear()
     
     def clear(self):
-        print("clearing list!")
         self.tree = list()
         root = MyTreeNode()
         root.id = 0
@@ -160,40 +160,28 @@ class MyRootTree:
     def growNode(self, nodeId):
         # bound condition length
         if (self.tree[nodeId].len < (self.params.maxLen * self.params.levelLenRatio ** self.tree[nodeId].level)):
-            print("grow node: " + str(nodeId))
             # get current direction add noise and grow by random length
-            print("points direction: ", self.tree[nodeId].points[-1], self.tree[nodeId].points[-2])
             d = self.tree[nodeId].points[-1] - self.tree[nodeId].points[-2]
-            print("dir = ", d)
             d.normalize()
-            print("dir = ", d)
             rd = self.params.minNoiseDir + random.random() * (self.params.maxNoiseDir - self.params.minNoiseDir)
             rs = self.params.minStep + random.random() * (self.params.maxStep - self.params.minStep) #/ min(10.0, max(5, self.tree[nodeId].level*0.5)) #need to review this
             ds = rotate2DZ(d, rd);
-            print("rot dir = ", ds)
             ds = ds * rs;
-            print("scaled dir = ", ds)
             self.tree[nodeId].points.append((self.tree[nodeId].points[-1] + ds))
             self.tree[nodeId].len = self.tree[nodeId].len + norm(ds)
-            print("len: ", self.tree[nodeId].len)
-            print("new point: ", self.tree[nodeId].points[-1])
             
             # add children branch 
             if(random.random() < self.params.childRate and self.tree[nodeId].level < self.params.maxLevel and len(self.tree[nodeId].points) > self.params.minNodesBSplit and len(self.tree) < self.params.maxNodes):
-                print("new child")
+
                 newNode = MyTreeNode()
                 newNode.points.append(self.tree[nodeId].points[-1])
-                print("first point: ", newNode.points[0])
                 rs = self.params.splitDir + self.params.minNoiseDir + random.random() * (self.params.maxNoiseDir - self.params.minNoiseDir)
                 if(random.random() > self.params.LRRate):
                     ds = rotate2DZ(d, rs)
                 else:
                     ds = rotate2DZ(d, -rs)
                 
-                print("dir = ", ds)
                 newNode.points.append((newNode.points[-1] + ds))
-                print("last point: ", newNode.points[-1])
-                print("new node id: ", len(self.tree))
                 newNode.len = norm(ds)
                 newNode.id = len(self.tree)
                 newNode.parent = nodeId
@@ -207,7 +195,6 @@ class MyRootTree:
         it = 0
         while(it < self.params.maxIt):
             i = 0
-            print("grow node: " + str(i))
             while(i < len(self.tree) and it < self.params.maxIt): #todo multi thread
                 self.growNode(i)
                 i = i + 1
@@ -225,7 +212,6 @@ class MyRootTree:
             normal = self.tree[nodeId].points[j+1] - self.tree[nodeId].points[j]
             scale = min(curLen * self.params.diamLenScale, self.tree[nodeId].maxDiam)
             ct = transformCircle(self.c, scale, normal, self.tree[nodeId].points[j])
-            print(ct)
             vertices.extend(ct)
             assert (curLen >= curLen - norm(normal))
             curLen = curLen - norm(normal)
@@ -272,20 +258,15 @@ class MyRootTree:
         return ob
 
     def createLines(self):
-        print("inside objectc reation")
-        print("Len tree" + str(len(self.tree)))
         for i in range(0, len(self.tree)):
             curvedata = bpy.data.curves.new(name='Curve', type='CURVE')
             objectdata = bpy.data.objects.new("ObjCurve", curvedata)
             objectdata.location = (0,0,0) #object origin
             bpy.context.scene.objects.link(objectdata)
 
-            print(i)
             polyline = curvedata.splines.new('POLY')
             polyline.points.add(len(self.tree[i].points)-1)
-            print("adding points")
             for j in range(0, len(self.tree[i].points)):
-                print(self.tree[i].points[j])
                 x, y, z = self.tree[i].points[j]
                 polyline.points[j].co = (x, y, z, 1.0)
             #curvedata.update()
@@ -293,17 +274,24 @@ class MyRootTree:
             
     def run(self):
         self.clear()
-        
+        t = time.time()
         if(self.params.override):
             for item in bpy.data.meshes:
                 bpy.data.meshes.remove(item)
+        t2 = time.time()
+        print("\nTime taken clearing old meshes: ", t2 - t)
         
         self.generateSkeleton()
+        t3 = time.time()
+        print("Time taken generating skeleton: ", t3 - t2)
         #self.createLines()
         for i in range(0, len(self.tree)):
             vert, fac = self.generateFaces(i)
             self.createMesh(vert, fac)
         bpy.ops.group.create()
+        t4 = time.time()
+        print("Time taken creating vertices and faces: ", t4 - t3)
+        print("Total time: ", t4 - t)
         
 # ------------------------------------------------------------------------
 #    operators
