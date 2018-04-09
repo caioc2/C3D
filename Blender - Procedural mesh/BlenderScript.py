@@ -198,6 +198,7 @@ class MyRootTree:
                 newNode.id = len(self.tree)
                 newNode.parent = nodeId
                 newNode.startLen = self.tree[nodeId].len
+                newNode.level = self.tree[nodeId].level + 1
                 self.tree.append(newNode)
                 self.tree[nodeId].nodes.append(newNode.id)
                 
