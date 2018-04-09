@@ -303,6 +303,7 @@ class MyRootTree:
         for i in range(0, len(self.tree)):
             vert, fac = self.generateFaces(i)
             self.createMesh(vert, fac)
+        bpy.ops.group.create()
         
 # ------------------------------------------------------------------------
 #    operators
