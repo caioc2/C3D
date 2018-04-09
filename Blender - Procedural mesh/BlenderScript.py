@@ -36,12 +36,16 @@ from bpy.types import (Panel,
 #    store properties in the active scene
 # ------------------------------------------------------------------------
 
-class RootParams:
+bpy.context.scene.render.engine = "CYCLES"
+if(bpy.data.objects.get('Lamp') is not None):
+    bpy.data.objects['Lamp'].data.type = "SUN"
 
+class RootParams:
+    
     startPos = Vector((0.0, 0.0 ,0.0))
     startDirection = Vector((1.0, 0.0, 0.0))
-    minStep = 1.0
-    maxStep = 50.0
+    minStep = 0.01
+    maxStep = 0.5
     maxLen = 10000.0
     minNoiseDir = -15.0
     maxNoiseDir = 15.0
@@ -121,14 +125,8 @@ def transformCircle(circlePoints, scale, normal, pos):
         r2 =Matrix(([1, 0, 0], [0, 1, 0], [0, 0, 1]))
     else:
         r2 = Matrix(([normal.y/h, normal.x/h, 0], [-normal.x/h, normal.y/h, 0], [0, 0, 1]))
-        
-    h = math.sqrt(normal.z * normal.z + normal.y * normal.y)
-    if(h==0.0):
-        r1 =Matrix(([1, 0, 0], [0, 1, 0], [0, 0, 1]))
-    else:
-        r1 = Matrix(([0, normal.z/h, -normal.y/h], [0, normal.y/h, normal.z/h], [1, 0, 0]))
     
-    t = r2*r1*s;
+    t = r2*s;
     newCircle = list();
     for i in range(0, len(circlePoints)):
         v = t*circlePoints[i] + pos
@@ -235,12 +233,12 @@ class MyRootTree:
         vertices.append(self.tree[nodeId].points[-1])
         
         for j in range(0, len(self.tree[nodeId].points) - 2):
-            for i in range(0, self.params.nCircPoints - 2):
-                faces.append((j*self.params.nCircPoints + i, j*self.params.nCircPoints + i + 1, (j+1)*self.params.nCircPoints + i + 1, (j+1)*self.params.nCircPoints + i))
+            for i in range(0, self.params.nCircPoints - 1):
+                faces.append((j*self.params.nCircPoints + i, j*self.params.nCircPoints + i + 1, (j+1)*self.params.nCircPoints + i +1, (j+1)*self.params.nCircPoints + i))
             
             faces.append(((j+1)*self.params.nCircPoints - 1, j*self.params.nCircPoints, (j+1)*self.params.nCircPoints, (j+2)*self.params.nCircPoints - 1))
         
-        for i in range(0, self.params.nCircPoints - 2):
+        for i in range(0, self.params.nCircPoints - 1):
             faces.append(((len(self.tree[nodeId].points) - 2)* self.params.nCircPoints + i,
                                (len(self.tree[nodeId].points) - 2)* self.params.nCircPoints + i + 1,
                                (len(self.tree[nodeId].points) - 1)* self.params.nCircPoints))
@@ -294,13 +292,16 @@ class MyRootTree:
             
     def run(self):
         self.clear()
-        print("Root elem: ", len(self.tree[0].points))
+        
+        if(self.params.override):
+            for item in bpy.data.meshes:
+                bpy.data.meshes.remove(item)
+        
         self.generateSkeleton()
-        self.createLines()
-        #for i in range(0, len(self.tree)):
-        #    print(i)
-        #    vert, fac = self.generateFaces(i)
-        #    self.createMesh(vert, fac)
+        #self.createLines()
+        for i in range(0, len(self.tree)):
+            vert, fac = self.generateFaces(i)
+            self.createMesh(vert, fac)
         
 # ------------------------------------------------------------------------
 #    operators
