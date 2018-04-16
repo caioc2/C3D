@@ -4,7 +4,9 @@ import random
 import mathutils
 import math
 import time
+import multiprocessing
 from mathutils import (Vector, Matrix)
+from threading import Thread
 
 #Add-on header info
 bl_info = {
@@ -142,6 +144,7 @@ class MyRootTree:
         self.params = params
         self.c = makeCircleXZ(self.params.nCircPoints)
         self.clear()
+        self.coreCount = 1# multiprocessing.cpu_count() #no improvement so far
     
     def clear(self):
         self.tree = list()
@@ -195,26 +198,28 @@ class MyRootTree:
         it = 0
         while(it < self.params.maxIt):
             i = 0
-            while(i < len(self.tree) and it < self.params.maxIt): #todo multi thread
+            while(i < len(self.tree) and it < self.params.maxIt):
                 self.growNode(i)
                 i = i + 1
                 it = it + 1
     
     def generateFaces(self, nodeId):
-        vertices = list();
-        faces = list();
+        vertices = list()
+        faces = list()
         
         curLen = self.tree[nodeId].len
         parentLen = self.tree[self.tree[nodeId].parent].len - self.tree[nodeId].startLen
         self.tree[nodeId].maxDiam = min( min(curLen, parentLen) * self.params.diamLenScale, self.tree[self.tree[nodeId].parent].maxDiam)
         
+        lastNormal = self.tree[nodeId].points[1] - self.tree[nodeId].points[0];
         for j in range(0, len(self.tree[nodeId].points) - 1):
             normal = self.tree[nodeId].points[j+1] - self.tree[nodeId].points[j]
+            dir = lastNormal + normal;
             scale = min(curLen * self.params.diamLenScale, self.tree[nodeId].maxDiam)
-            ct = transformCircle(self.c, scale, normal, self.tree[nodeId].points[j])
+            ct = transformCircle(self.c, scale, dir, self.tree[nodeId].points[j])
             vertices.extend(ct)
-            assert (curLen >= curLen - norm(normal))
             curLen = curLen - norm(normal)
+            lastNormal = normal
         
         
         vertices.append(self.tree[nodeId].points[-1])
@@ -242,7 +247,7 @@ class MyRootTree:
         me = bpy.data.meshes.new('mesh'+str(self.meshId)+'-root_of_shame')
         ob = bpy.data.objects.new(str(self.meshId)+'-root_of_shame', me)
         ob.location = self.params.startPos
-        #ob.show_name = True
+        ob.show_name = True
         self.meshId = self.meshId+1
      
         # Link object to scene and make active
@@ -270,6 +275,12 @@ class MyRootTree:
                 x, y, z = self.tree[i].points[j]
                 polyline.points[j].co = (x, y, z, 1.0)
             #curvedata.update()
+        
+    def threadGenFaces(self, startIdx):
+        print("Running on thread: ", startIdx)
+        for i in range(startIdx, len(self.tree), self.coreCount):
+            vert, fac = self.generateFaces(i)
+            self.createMesh(vert, fac)
 
             
     def run(self):
@@ -285,9 +296,15 @@ class MyRootTree:
         t3 = time.time()
         print("Time taken generating skeleton: ", t3 - t2)
         #self.createLines()
-        for i in range(0, len(self.tree)):
-            vert, fac = self.generateFaces(i)
-            self.createMesh(vert, fac)
+        
+        threads = list()
+        for i in range(0, self.coreCount):
+            threads.append(Thread(target = self.threadGenFaces, args = (i, )))
+            threads[i].start()
+        
+        for i in range(0, self.coreCount):
+            threads[i].join();
+            
         bpy.ops.group.create()
         t4 = time.time()
         print("Time taken creating vertices and faces: ", t4 - t3)
@@ -295,61 +312,7 @@ class MyRootTree:
         
 # ------------------------------------------------------------------------
 #    operators
-# ------------------------------------------------------------------------
-
-def testMesh():
-    p = list()
-    p.append(Vector((1,0,0)))
-    p.append(Vector((1,1,0)))
-    p.append(Vector((2,2,0)))
-    curLen = 5;
-    c=makeCircleXZ(12)
-    
-    vertices = list();
-    faces = list()
-    for j in range(0, len(p) - 1):
-        normal = p[j+1] - p[j]
-        scale = min(curLen * 0.05, 10)
-        ct = transformCircle(c, scale, normal, p[j])
-        vertices.extend(ct)
-        curLen = curLen - norm(normal)
-        
-        
-        
-    for j in range(0, len(p) - 1):
-        for i in range(0, 11):
-            faces.append((j*12 + i, j*12 + i + 1, (j+1)*12 + i + 1, (j+1)*12 + i))
-        
-        faces.append(((j+1)*12 - 1, j*12, (j+1)*12, (j+2)*12 - 1))
-    
-    # Create mesh and object
-    me = bpy.data.meshes.new('my-mesh')
-    ob = bpy.data.objects.new('my-mesh', me)
-    ob.location = Vector((0,0,0))
-    #ob.show_name = True
- 
-    # Link object to scene and make active
-    scn = bpy.context.scene
-    scn.objects.link(ob)
-    scn.objects.active = ob
-    ob.select = True
- 
-    # Create mesh from given verts, faces.
-    me.from_pydata(vertices, [], faces)
-    # Update mesh with new data
-    me.update()
-    #return ob
-    
-    #for i in range(0, self.params.nCircPoints - 2):
-    #    self.faces.append(((len(self.tree[nodeId].points) - 2)* self.params.nCircPoints + i,
-    #                       (len(self.tree[nodeId].points) - 2)* self.params.nCircPoints + i + 1,
-    #                       (len(self.tree[nodeId].points) - 1)* self.params.nCircPoints))
-#    
-#    
-#    self.faces.append(((len(self.tree[nodeId].points) - 1)* self.params.nCircPoints - 1,
-#                       (len(self.tree[nodeId].points) - 2)* self.params.nCircPoints,
-#                       (len(self.tree[nodeId].points) - 1)* self.params.nCircPoints))
-        
+# ------------------------------------------------------------------------      
 
 class GeneratorOperator(bpy.types.Operator):
     bl_idname = "wm.root_of_shame_op"
