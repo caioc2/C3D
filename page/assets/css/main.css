@@ -2687,7 +2687,7 @@
 			}
 
 		.spotlight.alt {
-			background: #1e1f23;
+			background: #395041;
 			color: rgba(255, 255, 255, 0.25);
 			display: -moz-flex;
 			display: -webkit-flex;
@@ -3030,7 +3030,7 @@
 
 	.wrapper > header {
 		text-align: center;
-		background: #FFF;
+		background: #076596;
 		padding: 2rem;
 		margin: 0;
 	}
@@ -3109,7 +3109,7 @@
 		}
 
 	.wrapper.style2 {
-		background: #1e1f23;
+		background: #558322;
 		padding: 6rem;
 	}
 
