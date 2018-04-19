@@ -3109,7 +3109,7 @@
 		}
 
 	.wrapper.style2 {
-		background: #558322;
+		background: #a9cfe4;
 		padding: 6rem;
 	}
 
@@ -3142,6 +3142,53 @@
 
 			.wrapper.style2 {
 				padding: 2rem;
+			}
+
+		}
+		
+	.wrapper.style3 {
+		background: #558322;
+		padding-top: 0.1rem;
+	}
+	
+		.wrapper.style3 .ct-back {
+			background: #FFF;
+		}
+		
+		.wrapper.style3 header p {
+			color: #bbb;
+		}
+
+		.wrapper.style3 header {
+			background: #323335;
+			border-radius: 4px 4px 0 0;
+			margin: 6rem;
+		}
+
+			.wrapper.style3 header h2 {
+				color: #FFF;
+			}
+
+				.wrapper.style3 header h2:after {
+					background-color: rgba(255, 255, 255, 0.125);
+				}
+
+			.wrapper.style3 header p {
+				color: rgba(255, 255, 255, 0.25);
+			}
+
+		@media screen and (max-width: 1280px) {
+
+			.wrapper.style3  header {
+				margin: 4rem;
+			}
+
+		}
+
+		@media screen and (max-width: 736px) {
+
+			.wrapper.style3 header {
+				margin: 2rem;
 			}
 
 		}
