@@ -46,28 +46,44 @@
 						
 						<header >
 							<h2>Procedural generation of tree-like structures</h2>
-							<p>skeleton</p>
+							<p>skeleton & Mesh</p>
 						</header>
 						
 						<div class="ct-back">
 							<div class="spotlight">
 								<div class="image flush"><img src="images/basic-rewrite.gif" alt="" /></div>
 								<div class="inner">
-									<h3>Viverra Hendrerit</h3>
-									<p>Curabitur eget semper ante. Morbi eleifend ultricies est, a blandit diam vehicula vel. Vestibulum porttitor nisi quis viverra hendrerit. Suspendisse vel volutpat nibh, vel elementum lacus. Maecenas commodo pulvinar dui, at cursus metus imperdiet vel.</p>
+									<h3>Rewrite rule</h3>
+									<p>The base for the construction of the skeleton lies in the following rewrite rule:</p>
+									<p>Given the alphabet {s,l,r,$}, "s" represents a piece of a segment, "l" turn to left by θ degrees, "r" turn to right by θ degrees and "$" the ending of a segment. Then we use the rules "$" → "a$", the growing of a segment, "$" → ("a$", "la$") and  "$" → ("a$", "ra$"), the branching and one step growing of a segment to left and right respectively. One important thing to notice is that we start with a single chain but may end with many, as the branching rules initiate new chains which grow independently. One may notice we have three rules for the same symbol "$", here is where the probability distribution comes in, you can assign probabilities for each rule and sample obtaining different constructions.</p>
 								</div>
 							</div>
 							<div class="spotlight alt">
-								<div class="image flush"><img src="images/pic07.jpg" alt="" /></div>
+								<div class="image flush"><img src="images/noise.gif" alt="" /></div>
 								<div  class="inner">
-									<h3>Curabitur Eget</h3>
-									<p>Curabitur eget semper ante. Morbi eleifend ultricies est, a blandit diam vehicula vel. Vestibulum porttitor nisi quis viverra hendrerit. Suspendisse vel volutpat nibh, vel elementum lacus. Maecenas commodo pulvinar dui, at cursus metus imperdiet vel.</p>
+									<h3>Noise Addition</h3>
+									<p>From a visual inspection it`s perceptible that only branching with straight lines and fixed segments size does not achieve what is proposed. So one way of making it more natural is adding noise in each step.</p>
+									<p>We sample a δL (length) and δθ (angle) from a normal distribution and add it to the grown of each segment for each step. These noises simulates a continuous process where it grows a random length until it changes its growing direction a little bit.</p>
 								</div>
 							</div>
 							<div class="spotlight">
-								<div class="image flush"><img src="images/pic08.jpg" alt="" /></div>
+								<div class="image flush"><img src="" alt="" /></div>
 								<div class="inner">
-									<h3>Morbi Eleifend</h3>
+									<h3>Surface generation</h3>
+									<p>Curabitur eget semper ante. Morbi eleifend ultricies est, a blandit diam vehicula vel. Vestibulum porttitor nisi quis viverra hendrerit. Suspendisse vel volutpat nibh, vel elementum lacus. Maecenas commodo pulvinar dui, at cursus metus imperdiet vel.</p>
+								</div>
+							</div>
+							<div class="spotlight alt2">
+								<div class="image flush"><img src="images/growing-wire.gif" alt="" /></div>
+								<div  class="inner">
+									<h3>Growth animation</h3>
+									<p>Generating the frames for the animation during the simulation is straightforward, after each epoch (an epoch means each branch have been visited and updated) one generate the surface and draw it. In the other hand generating the frames after the simulation one must keep track of the epochs.</p>
+								</div>
+							</div>
+							<div class="spotlight">
+								<div class="image flush"><img src="" alt="" /></div>
+								<div class="inner">
+									<h3>Future plans</h3>
 									<p>Curabitur eget semper ante. Morbi eleifend ultricies est, a blandit diam vehicula vel. Vestibulum porttitor nisi quis viverra hendrerit. Suspendisse vel volutpat nibh, vel elementum lacus. Maecenas commodo pulvinar dui, at cursus metus imperdiet vel.</p>
 								</div>
 							</div>
@@ -78,7 +94,7 @@
 					<section id="two" class="wrapper style2">
 						<header>
 							<h2>Blender add-on</h2>
-							<p>3D mesh</p>
+							<p>Implementation & parameters</p>
 						</header>
 						<div class="content">
 							<div class="gallery">
