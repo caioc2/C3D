@@ -47,14 +47,14 @@ class RootParams:
     
     startPos = Vector((0.0, 0.0 ,0.0))
     startDirection = Vector((1.0, 0.0, 0.0))
-    minStep = 0.01
-    maxStep = 0.5
+    meanStep = 0.03
+    varStep = 0.005
     maxLen = 10000.0
-    minNoiseDir = -15.0
-    maxNoiseDir = 15.0
+    meanNoiseDir = 0
+    varNoiseDir = 10.0
     splitDir = 30.0
     childRate = 0.15
-    levelLenRatio = 0.3
+    levelLenRatio = 0.7
     LRRate = 0.5
     diamLenScale = 0.01
     maxLevel = 5
@@ -70,11 +70,11 @@ class RootSettings(PropertyGroup):
 
     startPos = FloatVectorProperty(name="Start Pos", description="The starting position to create the root", default = defaultParams.startPos)
     startDirection = FloatVectorProperty(name="Start Dir", description="The starting direction to create the root", default = defaultParams.startDirection)
-    minStep = FloatProperty(name = "Min step", description = "The minimum growth step of each iteration", default = defaultParams.minStep, min = 0.0, max = 100.0)
-    maxStep = FloatProperty(name = "Max step", description = "The maximum growth step of each iteration", default = defaultParams.maxStep, min = 0.0, max = 100.0)
+    meanStep = FloatProperty(name = "Mean step", description = "The minimum growth step of each iteration", default = defaultParams.meanStep, min = 0.0, max = 100.0)
+    varStep = FloatProperty(name = "Var step", description = "The maximum growth step of each iteration", default = defaultParams.varStep, min = 0.0, max = 100.0)
     maxLen = FloatProperty(name = "Max Len", description = "The maximum length of a branch of the root", default = defaultParams.maxLen, min = 0.0, max = 100000.0)
-    minNoiseDir = FloatProperty(name = "Min dir noise", description = "The minimum noise added to the direction of a branch at each iteration in degrees", default = defaultParams.minNoiseDir, min = -90.0, max = 0.0)
-    maxNoiseDir = FloatProperty(name = "Max dir noise", description = "The maximum noise added to the direction of a branch at each iteration in degrees", default = defaultParams.maxNoiseDir, min = 0.0, max = 90.0)
+    meanNoiseDir = FloatProperty(name = "Mean dir noise", description = "The minimum noise added to the direction of a branch at each iteration in degrees", default = defaultParams.meanNoiseDir, min = -90.0, max = 90.0)
+    varNoiseDir = FloatProperty(name = "Var dir noise", description = "The maximum noise added to the direction of a branch at each iteration in degrees", default = defaultParams.varNoiseDir, min = 0.0, max = 90.0)
     splitDir = FloatProperty(name = "Branch Dir", description = "The angle formed by a branching in the root", default = defaultParams.splitDir, min = 0.0, max = 180.0)
     childRate = FloatProperty(name = "Branch rate", description = "The rate of branch per iteraction", default = defaultParams.childRate, min = 0.0, max = 1.0)
     levelLenRatio = FloatProperty(name = "Level\length ratio", description = "The maximum ratio of the length between a branch and its child", default = defaultParams.levelLenRatio, min = 0.0, max = 1.0)
@@ -154,8 +154,8 @@ class MyRootTree:
         root.maxDiam = sys.float_info.max
         root.level = 1
         root.points.append(Vector(self.params.startPos))
-        root.points.append(Vector(self.params.startPos) + Vector(self.params.startDirection))
-        root.len = norm(Vector(self.params.startDirection))
+        root.points.append(Vector(self.params.startPos) + Vector(self.params.startDirection) * self.params.meanStep)
+        root.len = norm(Vector(self.params.startDirection) * self.params.meanStep)
         self.tree.append(root)
         self.meshId = 0;
         
@@ -166,10 +166,12 @@ class MyRootTree:
             # get current direction add noise and grow by random length
             d = self.tree[nodeId].points[-1] - self.tree[nodeId].points[-2]
             d.normalize()
-            rd = self.params.minNoiseDir + random.random() * (self.params.maxNoiseDir - self.params.minNoiseDir)
-            rs = self.params.minStep + random.random() * (self.params.maxStep - self.params.minStep) #/ min(10.0, max(5, self.tree[nodeId].level*0.5)) #need to review this
+            la = random.normalvariate(0,1) 
+            lb = random.normalvariate(0,1)
+            rd = self.params.meanNoiseDir + la * self.params.varNoiseDir
+            rs = self.params.meanStep +  lb * self.params.varStep
             ds = rotate2DZ(d, rd);
-            ds = ds * rs;
+            ds = (ds * rs)*(self.params.levelLenRatio**(self.tree[nodeId].level -1));
             self.tree[nodeId].points.append((self.tree[nodeId].points[-1] + ds))
             self.tree[nodeId].len = self.tree[nodeId].len + norm(ds)
             
@@ -178,7 +180,8 @@ class MyRootTree:
 
                 newNode = MyTreeNode()
                 newNode.points.append(self.tree[nodeId].points[-1])
-                rs = self.params.splitDir + self.params.minNoiseDir + random.random() * (self.params.maxNoiseDir - self.params.minNoiseDir)
+                rs = self.params.splitDir + self.params.meanNoiseDir + random.normalvariate(0,1) * self.params.varNoiseDir
+                d = d * self.params.meanStep
                 if(random.random() > self.params.LRRate):
                     ds = rotate2DZ(d, rs)
                 else:
@@ -324,11 +327,11 @@ class GeneratorOperator(bpy.types.Operator):
         curParams = RootParams()
         curParams.startPos = mt.startPos
         curParams.startDirection = mt.startDirection
-        curParams.minStep = mt.minStep
-        curParams.maxStep = mt.maxStep
+        curParams.meanStep = mt.meanStep
+        curParams.varStep = mt.varStep
         curParams.maxLen = mt.maxLen
-        curParams.minNoiseDir = mt.minNoiseDir
-        curParams.maxNoiseDir = mt.maxNoiseDir
+        curParams.meanNoiseDir = mt.meanNoiseDir
+        curParams.varNoiseDir = mt.varNoiseDir
         curParams.splitDir = mt.splitDir
         curParams.childRate = mt.childRate
         curParams.levelLenRatio = mt.levelLenRatio
@@ -365,11 +368,11 @@ class OBJECT_PT_root_of_shame_panel(Panel):
 
         layout.prop(mt, "startPos")
         layout.prop(mt, "startDirection")
-        layout.prop(mt, "minStep")
-        layout.prop(mt, "maxStep")
+        layout.prop(mt, "meanStep")
+        layout.prop(mt, "varStep")
         layout.prop(mt, "maxLen")
-        layout.prop(mt, "minNoiseDir")
-        layout.prop(mt, "maxNoiseDir")
+        layout.prop(mt, "meanNoiseDir")
+        layout.prop(mt, "varNoiseDir")
         layout.prop(mt, "splitDir")
         layout.prop(mt, "childRate")
         layout.prop(mt, "levelLenRatio")
