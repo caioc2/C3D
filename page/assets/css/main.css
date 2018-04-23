@@ -2726,6 +2726,13 @@
 		.spotlight .inner {
 			padding: 6rem;
 		}
+		
+		.spotlight .inner2 {
+			padding: 1.5rem;
+		}
+		.spotlight .inner2 h3{
+			color: #FFF;
+		}
 
 		.spotlight .image {
 			margin: 0;
@@ -3213,7 +3220,7 @@
 		
 		#gallery-h {
 			text-align: center;
-			background: #202020;
+			background: #313335;
 			padding: 4rem;
 			color:#FFF
 		}
@@ -3223,7 +3230,7 @@
 		}
 		
 		.wrapper.style2 header {
-			background: #121315;
+			background: #323335;
 			border-radius: 4px 4px 0 0;
 			margin: 6rem;
 		}

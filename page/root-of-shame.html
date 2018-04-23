@@ -115,7 +115,7 @@
 								<p>The final result of this work is a blender add-on. It`s implemented using python, which is the scripting language used on blender. We added an small UI which can be accessed in "Object mode" in the tool shelf by the shortcut "T" > "Create" tab.</p>
 								<div class="spotlight">
 									<div class="image flush"><img src="images/blender-ui-detailed.png" alt="" /></div>
-										<div class="inner">
+										<div class="inner2">
 											<h3>Adjustable parameters</h3>
 											<ul>
 												<li class="outer">Initialization</li>
@@ -124,15 +124,15 @@
 													</ul>
 												<li class="outer">Basic growth</li>
 													<ul>
-														<li>Mean step, controls how much a branch grow in one epoch</li>
+														<li>Mean step, how much a branch grow in one epoch</li>
 														<li>Branch direction, the angle which branches occur.</li>
 														<li>Level/Length ratio, the decay of the length of branches per level</li>
-														<li>Minimum #nodes before split, the minimum number of epochs (represented as nodes for each branch in the implementation) before a branch can have a child branch</li> 
+														<li>Minimum #nodes before split, number of steps before being able to branch</li> 
 													</ul>
 												<li class="outer">Growth noise</li>
 													<ul>
-														<li>Variance step, controls the variance of growth</li>
-														<li>Direction noise (mean & variance), controls the angle noise added on the direction of branches</li>
+														<li>Variance step,the variance of growth</li>
+														<li>Direction noise (mean & variance), the angle noise added to the direction of branches</li>
 														<li>Branch rate, the probability of branching</li>
 														<li>Left/Right rate, rate of branching to left and branching to right</li>
 													</ul>
