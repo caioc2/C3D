@@ -2373,7 +2373,43 @@
 		.icon > .label {
 			display: none;
 		}
-
+		
+		.icon.github {
+			background-image: url(../../images/github.png);
+			background-size: contain;
+			display: inline-block;
+			width: 35px;
+			height: 35px;
+			opacity: 0.5
+		}
+		
+		.icon.ffmpeg {
+			background-image: url(../../images/ffmpeg.png);
+			background-size: contain;
+			display: inline-block;
+			width: 35px;
+			height: 35px;
+			opacity: 0.5
+			
+		}
+		
+		.icon.blender {
+			background-image: url(../../images/blender.png);
+			background-size: contain;
+			display: inline-block;
+			width: 35px;
+			height: 35px;
+			opacity: 0.5
+		}
+		
+		.icon.scilab {
+			background-image: url(../../images/scilab.png);
+			background-size: contain;
+			display: inline-block;
+			width: 35px;
+			height: 35px;
+			opacity: 0.5
+		}
 /* Image */
 
 	.image {

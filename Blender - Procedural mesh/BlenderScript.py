@@ -47,20 +47,20 @@ class RootParams:
     
     startPos = Vector((0.0, 0.0 ,0.0))
     startDirection = Vector((1.0, 0.0, 0.0))
-    meanStep = 0.03
-    varStep = 0.005
-    maxLen = 10000.0
+    meanStep = 0.3
+    varStep = 0.05
+    maxLen = 1000.0
     meanNoiseDir = 0
     varNoiseDir = 10.0
     splitDir = 30.0
-    childRate = 0.15
+    childRate = 0.3
     levelLenRatio = 0.7
     LRRate = 0.5
     diamLenScale = 0.01
     maxLevel = 5
     minNodesBSplit = 5
     maxNodes = 500
-    maxIt = 5500
+    maxIt = 1000
     nCircPoints = 50
     override = True
     
@@ -169,7 +169,7 @@ class MyRootTree:
             la = random.normalvariate(0,1) 
             lb = random.normalvariate(0,1)
             rd = self.params.meanNoiseDir + la * self.params.varNoiseDir
-            rs = self.params.meanStep +  lb * self.params.varStep
+            rs = max(self.params.meanStep +  lb * self.params.varStep, self.params.meanStep/100)
             ds = rotate2DZ(d, rd);
             ds = (ds * rs)*(self.params.levelLenRatio**(self.tree[nodeId].level -1));
             self.tree[nodeId].points.append((self.tree[nodeId].points[-1] + ds))
