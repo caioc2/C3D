@@ -2324,6 +2324,7 @@
 		-webkit-align-items: stretch;
 		-ms-align-items: stretch;
 		align-items: stretch;
+		padding-top: 4rem;
 	}
 
 		.gallery .image.fit {
@@ -2342,10 +2343,18 @@
 		}
 
 		.gallery > * {
-			width: 50%;
+			width: 25%;
 		}
 
 		@media screen and (max-width: 980px) {
+
+			.gallery > * {
+				width: 50%;
+			}
+
+		}
+		
+		@media screen and (max-width: 580px) {
 
 			.gallery > * {
 				width: 100%;
@@ -2483,6 +2492,10 @@
 		padding-left: 1rem;
 	}
 
+		.outer {
+			font-weight: 1000;
+		}
+		
 		ul li {
 			padding-left: 0.5rem;
 		}
@@ -3186,12 +3199,33 @@
 
 	.wrapper.style2 {
 		background: #01b2df;
-		padding: 6rem;
+		padding-top: 0.1rem;
 	}
+		.wrapper.style2 .ct-back {
+			background: #404040;
+			padding: 6rem;
+		}
+		
+		.wrapper.style2 .ct-back .content {
+			color: #B0B0B0;
+			padding: 6rem;
+		}
+		
+		#gallery-h {
+			text-align: center;
+			background: #202020;
+			padding: 4rem;
+			color:#FFF
+		}
 
+		#gallery-h h2{
+			color:#FFF
+		}
+		
 		.wrapper.style2 header {
 			background: #121315;
 			border-radius: 4px 4px 0 0;
+			margin: 6rem;
 		}
 
 			.wrapper.style2 header h2 {
@@ -3208,7 +3242,11 @@
 
 		@media screen and (max-width: 1280px) {
 
-			.wrapper.style2 {
+			.wrapper.style2 header{
+				padding: 4rem;
+			}
+			
+			.wrapper.style2 .ct-back .content {
 				padding: 4rem;
 			}
 
@@ -3216,10 +3254,13 @@
 
 		@media screen and (max-width: 736px) {
 
-			.wrapper.style2 {
+			.wrapper.style2 header{
 				padding: 2rem;
 			}
-
+			
+			.wrapper.style2 .ct-back .content {
+				padding: 2rem;
+			}
 		}
 		
 	.wrapper.style3 {
@@ -3230,6 +3271,7 @@
 		.wrapper.style3 .ct-back {
 			background: #FFF;
 		}
+		
 		
 		.wrapper.style3 header p {
 			color: #bbb;
