@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+
+	<head>
+		<title>The Phantom Trees</title>
+		<meta charset="utf-8" />
+	</head>
+	
+	<header id="header">
+	<div><h1>The Phantom Trees Growth - Unity scene<h1></div>
+</header>
+<body style="text-align: center">
+	<div>
+		<img src="images/under-construction.png" width="10%" height="10%"/>
+	</div>
+	
+	<header>
+		<h2>Assigment II</h2>
+	</header>
+	
+	As the days passes the phantom trees grow and shine at night...
+	</br>
+	
+	<iframe width="1400" height="600"
+		src="https://www.youtube.com/embed/-A3lDx-GB-Q">
+	</iframe>
+	</br>
+	</br>You can try out the web version <a href="game/index.html">here</a> or download the PC version <a href="https://drive.google.com/file/d/1lh9_jf37NjJpbaLHZnSFcYuiqmt4dXUl/view?usp=sharing">here</a>.
+	</br>The web version have various things stripped out (mainly dynamic shadows/effects).
+	</br>You can use the controls "W" "A" "S" "D" "Q" "E" to move forward, backward, left, right, up and down respectively. Pressing "SPACE" you can toggle between skip the animation and reset the animation.
+	</br>It's a CPU intensive task as the trees meshes are generated every frame for the animation.
+	</br>We are using about 200 million triangles in the scene, so you may notice a frame drop when the trees are growing.
+	</br>We could run it fine on a old i7 3770, so if you have a better processor and enough system and GPU RAM to store the triangles you should be fine.
+	</br>We have plans to reduce the triangles count by simplifying the meshes given the viewing distance and improve performance by multi-threading the mesh generation or using compute shader.
+	
+</body>
