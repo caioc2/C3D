@@ -1,37 +1,294 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
+<!--
+	Hielo by TEMPLATED
+	templated.co @templatedco
+	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
 <html>
-
-
 	<head>
 		<title>The Phantom Trees</title>
 		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="assets/css/main2.css" />
 	</head>
-	
-	<header id="header">
-	<div><h1>The Phantom Trees Growth - Unity scene<h1></div>
-</header>
-<body style="text-align: center">
-	<div>
-		<img src="images/under-construction.png" width="10%" height="10%"/>
-	</div>
-	
-	<header>
-		<h2>Assignment II</h2>
-	</header>
-	
-	As the days passes the phantom trees grow and shine at night...
-	</br>
-	
-	<iframe width="1400" height="600"
-		src="https://www.youtube.com/embed/-A3lDx-GB-Q">
-	</iframe>
-	</br>
-	</br>You can try out the web version <a href="game/index.html">here</a> or download the PC version <a href="https://drive.google.com/file/d/1lh9_jf37NjJpbaLHZnSFcYuiqmt4dXUl/view?usp=sharing">here</a>.
-	</br>The web version have various things stripped out (mainly dynamic shadows/effects).
-	</br>You can use the controls "W" "A" "S" "D" "Q" "E" to move forward, backward, left, right, up and down respectively. Pressing "SPACE" you can toggle between skip the animation and reset the animation.
-	</br>It's a CPU intensive task as the trees meshes are generated every frame for the animation.
-	</br>We are using about 200 million triangles in the scene, so you may notice a frame drop when the trees are growing.
-	</br>We could run it fine on a old i7 3770, so if you have a better processor and enough system and GPU RAM to store the triangles you should be fine.
-	</br>We have plans to reduce the triangles count by simplifying the meshes given the viewing distance and improve performance by multi-threading the mesh generation or using compute shader.
-	
-</body>
+	<!-- The Modal -->
+			<div id="myModal" class="modal">
+			  <span class="close">&times;</span>
+			  <img class="modal-content" id="img01">
+			  <div id="caption"></div>
+			</div>
+	<body>
+
+		<!-- Header -->
+			<header id="header" class="alt">
+				<div class="logo"><a href="index.html">The Phantom Trees <span>by caioc2</span></a></div>
+				<a href="#menu">Menu</a>
+			</header>
+
+		<!-- Nav -->
+			<nav id="menu">
+				<ul class="links">
+					<li><a href="index2.html">Home</a></li>
+					<li><a href="unity_dev.html">Unity Scene</a></li>
+					<li><a href="game/index.html">Game</a></li>
+					<li><a href="https://drive.google.com/open?id=1lh9_jf37NjJpbaLHZnSFcYuiqmt4dXUl">Download</a></li>
+				</ul>
+			</nav>
+
+		<!-- Banner -->
+			<section class="banner full">
+				<article>
+					<img src="images/dawn-b.png" alt="" />
+					<div class="inner">
+						<header>
+							<p>A movie-like experience</p>
+							<h2></h2>
+						</header>
+					</div>
+				</article>
+				<article>
+					<img src="images/day-b.png" alt="" />
+					<div class="inner">
+						<header>
+							<p>Day and night cycle & sound</p>
+							<h2></h2>
+						</header>
+					</div>
+				</article>
+				<article>
+					<img src="images/evening-b.png"  alt="" />
+					<div class="inner">
+						<header>
+							<p>Procedural generated tree and growth animation</p>
+							<h2></h2>
+						</header>
+					</div>
+				</article>
+				<article>
+					<img src="images/night-b.png"  alt="" />
+					<div class="inner">
+						<header>
+							<p>Phantom particles flowing at night</p>
+							<h2></h2>
+						</header>
+					</div>
+				</article>
+				<article>
+					<img src="images/unity-b.png"  alt="" />
+					<div class="inner">
+						<header>
+							<p>Made with Unity engine</p>
+							<h2>Unity</h2>
+						</header>
+					</div>
+				</article>
+			</section>
+
+		<!-- One -->
+			<section id="one" class="wrapper style2">
+				<div class="inner">
+						<header style="text-align: center;">
+							<h2>The Phantom Trees</h2>
+							<p>As the days passes the phantom trees grow and shine at night... </p>
+						</header>
+					<div style="position: relative; width: 100%; padding-bottom: 45%; float: left; height: 0">
+						<iframe style="width: 100%;  height: 100%; position: absolute; left: 0;" src="https://www.youtube.com/embed/-A3lDx-GB-Q"></iframe>
+					</div>
+					<div class="grid-style">
+						
+						<div>
+							<div class="box">
+								<div class="image fit">
+									<img src="images/trees.png" alt="" />
+								</div>
+								<div class="content">
+									<header class="align-center">
+										<p>Creating the scene, scripts and rendering</p>
+										<h2>Unity Development</h2>
+									</header>
+									<p>This scene was designed to fit the assets and ideas from <a href="index.html">assignment I</a> in a movie like experience.</p>
+									<footer class="align-center">
+										<a href="unity_dev.html" class="button alt">Learn More</a>
+									</footer>
+								</div>
+							</div>
+						</div>
+
+						<div>
+							<div class="box">
+								<div class="image fit">
+									<img src="images/game.png" alt="" />
+								</div>
+								<div class="content">
+									<header class="align-center">
+										<p>The compiled game</p>
+										<h2>Final Result</h2>
+									</header>
+									<p>You can try out the final result in your browser or download the PC version. Notice that the web version have various effects disabled while the PC version is exactly as the video. You can use the controls W, S, A, D, Q, E to move the camera forward, backward, left, right, up and down respectively and SPACE to toggle the initial/final state of the animation. It's an un-optimized version with 200 million triangles, so one may have
+									frame drops while generating the triangles.
+									<footer class="align-center">
+										<a href="game/index.html" class="button alt">Try Out</a> or <a href="https://drive.google.com/open?id=1lh9_jf37NjJpbaLHZnSFcYuiqmt4dXUl" class="button alt">Download</a>
+									</footer>
+								</div>
+							</div>
+						</div>
+
+					</div>
+				</div>
+			</section>
+
+		<!-- Two -->
+			<section id="two" class="wrapper style3">
+				<div class="inner">
+					<!--<header class="align-center">
+						<p></p>
+						<h2></h2>
+					</header>-->
+				</div>
+			</section>
+
+			
+		<!-- Three -->
+			<section id="three" class="wrapper style2">
+				<div class="inner">
+					<header class="align-center">
+						<p class="special">Various images from unity editor and final results</p>
+						<h2>Gallery</h2>
+					</header>
+					<div class="gallery">
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/dawn.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/day.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/evening.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/night.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-1.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-2.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-3.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-4.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-5.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-6.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-7.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-8.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/trees-9.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/dawn-b.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/day-b.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/evening-b.png" alt="" /></a>
+							</div>
+						</div>
+						<div>
+							<div class="image fit">
+								<a><img class="modal-to" src="images/night-b.png" alt="" /></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="container">
+					<ul class="icons">
+						<li><a href="https://github.com/caioc2/C3D" class="icon github"><span class="label">GitHub</span></a></li>
+						<li><a href="https://www.ffmpeg.org/" class="icon ffmpeg"><span class="label">ffmpeg</span></a></li>
+						<li><a href="https://www.scilab.org/" class="icon scilab"><span class="label">scilab</span></a></li>
+						<li><a href="https://www.blender.org/" class="icon blender"><span class="label">Blender</span></a></li>
+					</ul>
+				</div>
+				<div class="copyright">
+					&copy; Caio SOUZA. All rights reserved. Background image <a href="https://teundenouden.deviantart.com/">Teun den Ouden</a> Design based on <a href="https://templated.co">TEMPLATED</a>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+		<script>
+			// Get the modal
+			var modal = document.getElementById('myModal');
+
+			// Get the image and insert it inside the modal - use its "alt" text as a caption
+			var img = document.getElementsByClassName("modal-to");
+			var modalImg = document.getElementById("img01");
+			for(var i=0; i < img.length; i++) {
+				img[i].onclick = function(){
+					modal.style.display = "block";
+					modalImg.src = this.src;
+				};
+			}
+
+			// Get the <span> element that closes the modal
+			var span = document.getElementsByClassName("close")[0];
+
+			// When the user clicks on <span> (x), close the modal
+			span.onclick = function() { 
+				modal.style.display = "none";
+			}
+		</script>
+			<script src="assets/js2/jquery.min.js"></script>
+			<script src="assets/js2/jquery.scrollex.min.js"></script>
+			<script src="assets/js2/skel.min.js"></script>
+			<script src="assets/js2/util.js"></script>
+			<script src="assets/js2/main.js"></script>
+
+	</body>
+</html>

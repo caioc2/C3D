@@ -1,0 +1,173 @@
+<!DOCTYPE HTML>
+<!--
+	Hielo by TEMPLATED
+	templated.co @templatedco
+	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
+<html>
+	<head>
+		<title>The Phantom Trees</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="assets/css/main2.css" />
+	</head>
+	<body class="subpage">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="logo"><a href="index.html">The Phantom Trees <span>by caioc2</span></a></div>
+				<a href="#menu">Menu</a>
+			</header>
+
+		<!-- Nav -->
+			<nav id="menu">
+				<ul class="links">
+					<li><a href="index2.html">Home</a></li>
+					<li><a href="game/index.html">Game</a></li>
+					<li><a href="https://drive.google.com/open?id=1lh9_jf37NjJpbaLHZnSFcYuiqmt4dXUl">Download</a></li>
+				</ul>
+			</nav>
+
+		<!-- One -->
+			<section id="One" class="wrapper style3">
+				<div class="inner">
+					<header class="align-center">
+						<p>Creating the scene, scripts and rendering</p>
+						<h2>Unity Development</h2>
+					</header>
+				</div>
+			</section>
+
+		<!-- Two -->
+			<section id="two" class="wrapper style2">
+				<div class="inner">
+					<div class="box">
+						<div class="content">
+							<header class="align-center">
+								<p>Procedural generation of tree-like meshes and animation</p>
+								<h2>Procedural Meshes</h2>
+							</header>
+							
+							<p> 
+							<div class="image left"><img src="images/root-of-shame.png" class="alt"></img></div>
+							In the <a href="index.html">assignment I</a> we have prototyped in Scilab the generation of meshes with root-like shape and implemented it for blender in python. Now we have re-implemented it in C# for the Unity project and improved in some points like expanding the mesh skeleton to 3D, adding sub-epoch growth and the generation of the mesh triangles and vertices for any epoch and sub-epoch, hence being able to animate it smooth over time. In this process some new parameters appeared to control, among other things, the 3D dispersion of branches, texturing and level of detail.</p>
+							
+							<p>Using the C# script is very simple, you attach it to an empty gameObject in unity, tweak the parameters and it will generate in real time the mesh of the tree/root growing over time</P>
+							<img src="images/detail-trees.png" style="width:60%"></img>
+						</div>
+					</div>
+				</div>
+			</section>
+			<!-- Three -->
+			<section id="three" class="wrapper style3">
+				<div class="inner">
+					<div class="box2">
+						<div class="content">
+							<header class="align-center">
+								<p>Simulating the days passing and sun position relative to earth</p>
+								<h2>Day/Night cycle</h2>
+							</header>
+							
+							<p>
+							Simulating the day/night cycle was essential to pass the feeling of time. To achieve that we used an skybox texture blending shader and carefully choose four skyboxes textures to interpolate over time. One for each phase of a day,  dawn, mid day, evening and night.
+							</p>
+							<p>
+							To make the shadows "walk" during the day we rotated the light "sun" during the day changing its intensity according with the sine of the angle made with the horizon or the altitude, and disable it during the night. We have also an background light with a very low intensity and fixed position enabled all the time.
+							</p>
+							<p>
+							Finally, to pass the feeling intended for the scene, two sounds were added, one playing at day and another at night, this would break a bit the fact of the scene being static. Everything was controlled in a C# script, which also interacted with the tree generation script.
+							</p>
+							<div class="grid-style">
+								<img src="images/fullmoon.png" class="alt"></img>
+								<img src="images/eveningsky.png" class="alt"></img>
+								<img src="images/bluesky.png" class="alt"></img>
+								<img src="images/sunnysky.png" class="alt"></img>
+							</div>
+							
+
+						</div>
+					</div>
+				</div>
+			</section>
+			
+			<!-- Four -->
+			<section id="four" class="wrapper style2">
+				<div class="inner">
+					<div class="box">
+						<div class="content">
+							<header class="align-center">
+								<p>Putting all together to compose the scene</p>
+								<h2>Scene composition</h2>
+							</header>
+							
+							<p> 
+							<div class="image left">
+								<img src="images/mountain.png" class="alt"></img>
+								<span style="padding-top: 1rem; display=none;">.</span>
+								<img src="images/water-detail.png" class="alt"></img>
+							</div>
+								To compose the scene we needed a terrain, to avoid complication such as large terrains of having to use fog to hide the horizon a mountain was the best choice, as it could fill well the scene and fit the trees without problems.
+							</p>
+							<p>We hided the edges of the terrain with water, with reflexion only, and tweaked its parameters to not look too artificial.</P>
+							<p>Various trees were placed in the coast near the water in front of the camera. Each tree had a particle system, which was activated at night. Those particles had a low speed and negative gravity emitting a green light to simulate the "phantoms".
+							<img src="images/particles.png" style="width:55%"></img>
+						</div>
+					</div>
+				</div>
+			</section>
+			<!-- Five -->
+			<section id="five" class="wrapper style3">
+				<div class="inner">
+					<div class="box2">
+						<div class="content">
+							<header class="align-center">
+								<p>Rendering the scene, materials (shaders) and post-processing</p>
+								<h2>Rendering</h2>
+							</header>
+							
+							<p>
+							We choose the "deferred rendering" to render the scene as it had a lot of triangles when all the trees were displayed, and also many lights coming from the particles.
+							</p>
+							<p>
+							The shaders used were from the default Unity assets, with tweaked parameters to reflect the intended material.
+							To achieve the final looking was obtained using various post-processing:
+							<ul>
+								<li>Anti-Aliasing</li>
+								<li>Ambient Occlusion</li>
+								<li>Screen-Space Reflections</li>
+								<li>Eye Adaption</li>
+								<li>Bloom</li>
+								<li>Chromatic Aberration</li>
+								<li>Grain</li>
+								<li>Vignette</li>
+							</ul>
+							</p>
+
+						</div>
+					</div>
+				</div>
+			</section>
+		<!-- Footer -->
+			<footer id="footer">
+		<div class="container">
+			<ul class="icons">
+				<li><a href="https://github.com/caioc2/C3D" class="icon github"><span class="label">GitHub</span></a></li>
+				<li><a href="https://www.ffmpeg.org/" class="icon ffmpeg"><span class="label">ffmpeg</span></a></li>
+				<li><a href="https://www.scilab.org/" class="icon scilab"><span class="label">scilab</span></a></li>
+				<li><a href="https://www.blender.org/" class="icon blender"><span class="label">Blender</span></a></li>
+			</ul>
+		</div>
+		<div class="copyright">
+			&copy; Caio SOUZA. All rights reserved. Design based on <a href="https://templated.co">TEMPLATED</a>
+		</div>
+	</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js2/jquery.min.js"></script>
+			<script src="assets/js2/jquery.scrollex.min.js"></script>
+			<script src="assets/js2/skel.min.js"></script>
+			<script src="assets/js2/util.js"></script>
+			<script src="assets/js2/main.js"></script>
+
+	</body>
+</html>
