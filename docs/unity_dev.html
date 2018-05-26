@@ -69,10 +69,10 @@
 							</header>
 							
 							<p>
-							Simulating the day/night cycle was essential to pass the feeling of time. To achieve that we used an skybox texture blending shader and carefully choose four skyboxes textures to interpolate over time. One for each phase of a day,  dawn, mid day, evening and night.
+							Simulating the day/night cycle was essential to pass the feeling of time. To achieve that we used a skybox texture blending shader and carefully choose four skyboxes textures to interpolate over time. One for each phase of a day,  dawn, mid day, evening and night.
 							</p>
 							<p>
-							To make the shadows "walk" during the day we rotated the light "sun" during the day changing its intensity according with the sine of the angle made with the horizon or the altitude, and disable it during the night. We have also an background light with a very low intensity and fixed position enabled all the time.
+							To make the shadows "walk" during the day we rotated the light "sun" during the day changing its intensity according with the sine of the angle made with the horizon or the altitude, and disable it during the night. We have also a background light with a very low intensity and fixed position enabled all the time.
 							</p>
 							<p>
 							Finally, to pass the feeling intended for the scene, two sounds were added, one playing at day and another at night, this would break a bit the fact of the scene being static. Everything was controlled in a C# script, which also interacted with the tree generation script.
@@ -108,7 +108,7 @@
 							</div>
 								To compose the scene we needed a terrain, to avoid complication such as large terrains of having to use fog to hide the horizon a mountain was the best choice, as it could fill well the scene and fit the trees without problems.
 							</p>
-							<p>We hided the edges of the terrain with water, with reflexion only, and tweaked its parameters to not look too artificial.</P>
+							<p>We hided the edges of the terrain with water, with reflection only, and tweaked its parameters to not look too artificial.</P>
 							<p>Various trees were placed in the coast near the water in front of the camera. Each tree had a particle system, which was activated at night. Those particles had a low speed and negative gravity emitting a green light to simulate the "phantoms".
 							<img src="images/particles.png" style="width:55%"></img>
 						</div>
