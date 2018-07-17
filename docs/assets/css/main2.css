@@ -3393,28 +3393,28 @@
 				color: #999999;
 			}
 
-			.wrapper.style3 table tbody tr {
-				border-color: rgba(255, 255, 255, 0.25);
+			.wrapper.style2 table tbody tr {
+				border-color: rgba(0, 0, 0, 0.15);
 			}
 
-				.wrapper.style3 table tbody tr:nth-child(2n + 1) {
-					background-color: rgba(255, 255, 255, 0.075);
+				.wrapper.style2 table tbody tr:nth-child(2n + 1) {
+					background-color: rgba(0, 0, 0, 0.075);
 				}
 
-			.wrapper.style3 table th {
-				color: #ffffff;
+			.wrapper.style2 table th {
+				color: #000;
 			}
 
-			.wrapper.style3 table thead {
-				border-bottom-color: rgba(255, 255, 255, 0.25);
+			.wrapper.style2 table thead {
+				border-bottom-color: rgba(0, 0, 0, 0.15);
 			}
 
-			.wrapper.style3 table tfoot {
-				border-top-color: rgba(255, 255, 255, 0.25);
+			.wrapper.style2 table tfoot {
+				border-top-color: rgba(0, 0, 0, 0.15);
 			}
 
-			.wrapper.style3 table.alt tbody tr td {
-				border-color: rgba(255, 255, 255, 0.25);
+			.wrapper.style2 table.alt tbody tr td {
+				border-color: rgba(0, 0, 0, 0.15);
 			}
 
 			.wrapper.style3 .inner {

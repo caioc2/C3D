@@ -1,0 +1,253 @@
+<!DOCTYPE HTML>
+<!--
+	Hielo by TEMPLATED
+	templated.co @templatedco
+	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
+<html>
+	<head>
+		<title>The Phantom Trees</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="assets/css/main2.css" />
+	</head>
+	<body class="subpage">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="logo"><a href="index.html">The Phantom Trees <span>by caioc2</span></a></div>
+				<a href="#menu">Menu</a>
+			</header>
+
+		<!-- Nav -->
+			<nav id="menu">
+				<ul class="links">
+					<li><a href="index2.html">Home</a></li>
+					<li><a href="unity_dev.html">Unity scene</a></li>
+					<li><a href="game/index.html">Game</a></li>
+					<li><a href="https://drive.google.com/open?id=1lh9_jf37NjJpbaLHZnSFcYuiqmt4dXUl">Download</a></li>
+				</ul>
+			</nav>
+
+		<!-- One -->
+			<section id="One" class="wrapper style3">
+				<div class="inner">
+					<header class="align-center">
+						<p>Assignment 3: optimizing the rendering</p>
+						<h2>Unity Development 2</h2>
+					</header>
+				</div>
+			</section>
+
+		<!-- Two -->
+			<section id="two" class="wrapper style2">
+				<div class="inner">
+					<div class="box">
+						<div class="content">
+							<header class="align-center">
+								<p>The need for optimization</p>
+								<h2>Introduction</h2>
+							</header>
+							
+							<p> 
+							<!-- <div class="image left"><img src="images/root-of-shame.png" class="alt"></img></div> -->
+							In the <a href="index2.html">assignment II</a>, we have built the scene and growth animation of our trees. For this assignment, we chose to improve the tree generation speed and quality. In the quality part, the last assignment was lacking in properly UV mapping which was added together with the procedural generation of the mesh. In the other hand, the tree mesh generation  performance was sub-par, in the sense that it was intended to be real-time, but sometimes it would fall bellow 1 fps (frame per second), while we aimed to be above 30 fps.</p>
+							
+							<p>After some profiling and analysis we find out that rendering the final number of triangles (~1.6 millions) were not a problem, but generating them in C#. So the main idea was to reduce the triangle count without impacting the overall mesh quality, split the generation work among various threads and avoid generating everything at the same time. While doing so, we found out some constraints imposed by the unity engine design:
+							
+							<ul>
+								<li>There is no direct access to mesh data (vertices, triangles and uv). Given that, every time we update the mesh we need to copy its data from our local C# script to unity mesh object.</li>
+								<li>When using threads to make calculations one can not call any method from unity. This imposes the need of allocating work memory for each object instead of per thread, as one need to calculate everything and after it, setting up unity mesh all together in the main thread.</li>
+								<li>Unity manual states that meshes with intensive updates should be marked as dynamic. While updating the meshes we had no gain using it, and after the growth animation had ended we had big losses(about half the fps) using it.</li>
+							</ul>
+							</p>
+							<p>With all those points in mind, we reworked the original script, merged the generation of all trees in the same script instead of running one per tree, implemented the Level of Detail feature to reduce the triangle count, splitted the work among various threads and other minor tweaks to the C# code. </p>
+							
+							<!--<img src="images/detail-trees.png" style="width:60%"></img>-->
+						</div>
+					</div>
+				</div>
+			</section>
+			<!-- Three -->
+			<section id="three" class="wrapper style3">
+				<div class="inner">
+					<div class="box2">
+						<div class="content">
+							<header class="align-center">
+								<p>Generating the UV Mapping procedurally</p>
+								<h2>UV Mapping</h2>
+							</header>
+							<div class="image left"><img src="images/Bark_c5.png"  class="alt"></img></div>
+							<p>
+							Before generating the UV mapping we choose a tileable texture to repeat over the branches. As the mesh is made by circles passing through the "root" lines with a varying diameter, the same is done to the mapping, the circle is mapped to the texture width while the height is mapped accordingly with the ratio between the circle diameter and the length of the segment.
+							</p>
+							<p>
+							The bellow figures, show the "before" and "after" result, of the texture together with the detail map and normal map in the shader.
+							</p>
+							<div class="grid-style">
+								<img src="images/no-uv.png" class="alt"></img>
+								<img src="images/uv-detail.png" class="alt"></img>
+							</div>
+							
+
+						</div>
+					</div>
+				</div>
+			</section>
+			
+			<!-- Four -->
+			<section id="four" class="wrapper style2">
+				<div class="inner">
+					<div class="box">
+						<div class="content">
+							<header class="align-center">
+								<p>Cutting down the triangle count</p>,
+								<h2>Level of Detail</h2>
+							</header>
+							
+							<p> 
+								In our implementation of tree generation, each child branch has a exponential decrease in its spanning length and its sub-nodes length. Given that, when it reach a certain level the detail of a sub-node may not be perceptible from a certain distance. With this idea in mind, the Level of Detail feature aims to define a minimum length which a detail may be perceptible, anything with a lower length will be merged in a bigger sub-node. The same idea can be applied to the angles between two sub-nodes. The only constraint to be satisfied is when those two sub-nodes have a child branch starting from their junction, if you merge them you have to reposition the child branch accordingly. In simple words, we get a tree which has #n control points, and re-sample it with #m < #n points, following the requested minimum length of its segment parts.
+							</p>
+							<p>Bellow the three figures show how the details can be controlled. The left image has all possible details and is using 1,584,000 triangles, the center image has huge decrease in detail and is using 375,480 triangles, finally the right image is the minimum detail possible and is using 359,856. On our tests we are using something in the between of the first and second image (644,211 triangles).</p>
+							
+							<table style="width:80%;margin: auto;">
+							  <tr>
+								<th>*</th>
+								<th>Maximum Detail</th>
+								<th>Our Testing Detail</th> 
+								<th>Very Low Detail</th>
+								<th>Lowest Detail</th>
+							  </tr>
+							  <tr>
+								<th>triangles</th>
+								<td>1,584,000</td>
+								<td>644,211</td> 
+								<td>375,480</td>
+								<td>359,856</td>
+							  </tr>
+							  <tr>
+								<th>% of maximum</th>
+								<td>100,00%</td>
+								<td>40,67%</td> 
+								<td>23,70%</td>
+								<td>22,72%</td>
+							  </tr>
+							</table>
+							</br>
+							<img src="images/lod0.png" style="width:33%"></img>
+							<img src="images/lod1.png" style="width:33%"></img>
+							<img src="images/lod10.png" style="width:33%"></img>
+						</div>
+					</div>
+				</div>
+			</section>
+			<!-- Five -->
+			<section id="five" class="wrapper style3">
+				<div class="inner">
+					<div class="box2">
+						<div class="content">
+							<header class="align-center">
+								<p>Splitting the calculation work</p>
+								<h2>Multi-Threading</h2>
+							</header>
+							
+							<p>
+							As pointed out in the introduction, the unity engine imposes some constraints when using threads and handling mesh data. To overcome those limitations, the C# code was adapted following them. The first one was doubling the memory and having to copy the data every time which a update was done to the mesh. This is far from optimal, with direct access to the mesh data, one could have good performance gains when working with procedural meshes/animations. Nevertheless, it was "good" enough to make it real-time. A probably better solution generating the mesh data would be using a custom tesselation shader, where we would pass the skeleton of the trees as parameters and let the shader generate the triangles. This approach would avoid the memory copy, but the problem remains somewhat the same, how to have low level access to unity, as a first inspection in unity documentation reveals that the most common custom shaders for tesselation uses built-in tesselation functions, which are not suitable for our purpose.
+							</p>
+							<p>
+							The implementation idea for the multi-threading is straightforward, besides specific implementation details, one allocate working memory for each tree, and let the threads process the data in their respective space. We choose the per-object thread as the level of granularity, because a single tree alone is not enough to be a bottleneck and choosing a thinner granularity (i.e. per tree branching thread) would not achieve more gains.
+							<table style="width:80%;margin: auto;">
+							  <tr>
+								<th>*</th>
+								<th>Peak Time ST</th>
+								<th>Peak Time MT</th> 
+								<th>Peak Time ST + LOD</th>
+								<th>Peak Time MT + LOD</th>
+							  </tr>
+							  <tr>
+								<th>AVG Peak Time (ms)</th>
+								<td>975</td>
+								<td>375</td> 
+								<td>476</td>
+								<td>168</td>
+							  </tr>
+							  <tr>
+								<th>Unity Overhead (ms)</th>
+								<td>215</td>
+								<td>169</td> 
+								<td>100</td>
+								<td>74</td>
+							  </tr>
+							  <tr>
+								<th>% of Peak ST</th>
+								<td>100,00%</td>
+								<td>38,46%</td> 
+								<td>48,82%</td>
+								<td>17,23%</td>
+							  </tr>
+							  
+							  <tr>
+								<th>ST vs MT speedup</th>
+								<td colspan="4" style="text-align:center;">2,60x</td>
+							  </tr>
+							  <tr>
+								<th>no LOD vs LOD speedup</th>
+								<td colspan="4" style="text-align:center;">2,05x</td>
+							  </tr>
+							  <tr>
+								<th>Combined speedup</th>
+								<td colspan="4" style="text-align:center;">5,80x</td>
+							  </tr>
+							</table>
+							</br>
+							
+							<p> The test was made with a quad-core processor and the measures were made with the unity profiler. ST stands for Single-Thread, MT for Multi-Thread, LOD for Level of Detail and Unity Overhead for unity editor and rendering overhead. The rendered scene had 24 different trees having its growth animation running at the same time. </p>
+						</div>
+					</div>
+				</div>
+			</section>
+			<!-- Six -->
+			<section id="four" class="wrapper style2">
+				<div class="inner">
+					<div class="box">
+						<div class="content">
+							<header class="align-center">
+								<p>Last tricks and some thoughts about the results</p>,
+								<h2>Conclusion</h2>
+							</header>
+							
+							<p> 
+								One last trick, as not everything is only made with raw power, was to spread the tree growth animation over time to not have all trees achieving its peak calculations at the same time. With this, the peak time in milliseconds went down to 30, which is a 32,5x speedup compared to the single-threaded without LOD implementation. With everything together we are able to achieve the real-time performance without noticeable harm to the quality of the scene.
+							</p>
+							<p>
+								Our conclusion in general about the unity engine is that it's an interesting platform which tries to make it easier for developing and gluing things together without having to code in a low-level fashion. As nothing comes free, the current implementation hides almost everything from the developer, which in some cases, like ours, limits "custom ideas" to be done efficiently. Even so, we cant say it is bad at all, as everything which was done ran in the range of good enough and up.
+							</p>
+						</div>
+						<img src="images/end-clipart-page-end-9.jpg" style="display: block;margin-left: auto;margin-right: auto; width: 30%; padding-bottom:2rem"></img>
+					</div>
+				</div>
+			</section>
+		<!-- Footer -->
+			<footer id="footer">
+		<div class="container">
+			<ul class="icons">
+				<li><a href="https://github.com/caioc2/C3D" class="icon github"><span class="label">GitHub</span></a></li>
+				<li><a href="https://www.ffmpeg.org/" class="icon ffmpeg"><span class="label">ffmpeg</span></a></li>
+				<li><a href="https://www.scilab.org/" class="icon scilab"><span class="label">scilab</span></a></li>
+				<li><a href="https://www.blender.org/" class="icon blender"><span class="label">Blender</span></a></li>
+			</ul>
+		</div>
+		<div class="copyright">
+			&copy; Caio SOUZA. All rights reserved. Design based on <a href="https://templated.co">TEMPLATED</a>
+		</div>
+	</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js2/jquery.min.js"></script>
+			<script src="assets/js2/jquery.scrollex.min.js"></script>
+			<script src="assets/js2/skel.min.js"></script>
+			<script src="assets/js2/util.js"></script>
+			<script src="assets/js2/main.js"></script>
+
+	</body>
+</html>
