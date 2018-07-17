@@ -3393,27 +3393,27 @@
 				color: #999999;
 			}
 
-			.wrapper.style2 table tbody tr {
+			.wrapper.style3 table tbody tr {
 				border-color: rgba(0, 0, 0, 0.15);
 			}
 
-				.wrapper.style2 table tbody tr:nth-child(2n + 1) {
+				.wrapper.style3 table tbody tr:nth-child(2n + 1) {
 					background-color: rgba(0, 0, 0, 0.075);
 				}
 
-			.wrapper.style2 table th {
+			.wrapper.style3 table th {
 				color: #000;
 			}
 
-			.wrapper.style2 table thead {
+			.wrapper.style3 table thead {
 				border-bottom-color: rgba(0, 0, 0, 0.15);
 			}
 
-			.wrapper.style2 table tfoot {
+			.wrapper.style3 table tfoot {
 				border-top-color: rgba(0, 0, 0, 0.15);
 			}
 
-			.wrapper.style2 table.alt tbody tr td {
+			.wrapper.style3 table.alt tbody tr td {
 				border-color: rgba(0, 0, 0, 0.15);
 			}
 
