@@ -50,7 +50,7 @@
 							</header>
 							
 							<p> 
-							<!-- <div class="image left"><img src="images/root-of-shame.png" class="alt"></img></div> -->
+							<!-- <div class="image left"><img src="images/root-of-shame.jpg" class="alt"></img></div> -->
 							In the <a href="index2.html">assignment II</a>, we have built the scene and growth animation of our trees. For this assignment, we chose to improve the tree generation speed and quality. In the quality part, the last assignment was lacking in properly UV mapping which was added together with the procedural generation of the mesh. In the other hand, the tree mesh generation  performance was sub-par, in the sense that it was intended to be real-time, but sometimes it would fall bellow 1 fps (frame per second), while we aimed to be above 30 fps.</p>
 							
 							<p>After some profiling and analysis we find out that rendering the final number of triangles (~1.6 millions) were not a problem, but generating them in C#. So the main idea was to reduce the triangle count without impacting the overall mesh quality, split the generation work among various threads and avoid generating everything at the same time. While doing so, we found out some constraints imposed by the unity engine design:
@@ -63,7 +63,7 @@
 							</p>
 							<p>With all those points in mind, we reworked the original script, merged the generation of all trees in the same script instead of running one per tree, implemented the Level of Detail feature to reduce the triangle count, splitted the work among various threads and other minor tweaks to the C# code. </p>
 							
-							<!--<img src="images/detail-trees.png" style="width:60%"></img>-->
+							<!--<img src="images/detail-trees.jpg" style="width:60%"></img>-->
 						</div>
 					</div>
 				</div>
@@ -77,7 +77,7 @@
 								<p>Generating the UV Mapping procedurally</p>
 								<h2>UV Mapping</h2>
 							</header>
-							<div class="image left"><img src="images/Bark_c5.png"  class="alt"></img></div>
+							<div class="image left"><img src="images/Bark_c5.jpg"  class="alt"></img></div>
 							<p>
 							Before generating the UV mapping we choose a tileable texture to repeat over the branches. As the mesh is made by circles passing through the "root" lines with a varying diameter, the same is done to the mapping, the circle is mapped to the texture width while the height is mapped accordingly with the ratio between the circle diameter and the length of the segment.
 							</p>
@@ -85,8 +85,8 @@
 							The bellow figures, show the "before" and "after" result, of the texture together with the detail map and normal map in the shader.
 							</p>
 							<div class="grid-style">
-								<img src="images/no-uv.png" class="alt"></img>
-								<img src="images/uv-detail.png" class="alt"></img>
+								<img src="images/no-uv.jpg" class="alt"></img>
+								<img src="images/uv-detail.jpg" class="alt"></img>
 							</div>
 							
 
@@ -134,9 +134,9 @@
 							  </tr>
 							</table>
 							</br>
-							<img src="images/lod0.png" style="width:33%"></img>
-							<img src="images/lod1.png" style="width:33%"></img>
-							<img src="images/lod10.png" style="width:33%"></img>
+							<img src="images/lod0.jpg" style="width:33%"></img>
+							<img src="images/lod1.jpg" style="width:33%"></img>
+							<img src="images/lod10.jpg" style="width:33%"></img>
 						</div>
 					</div>
 				</div>
