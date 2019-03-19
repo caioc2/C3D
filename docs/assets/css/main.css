@@ -2384,7 +2384,7 @@
 		}
 		
 		.icon.github {
-			background-image: url(../../images/github.png);
+			background-image: url(../../images/github.jpg);
 			background-size: contain;
 			display: inline-block;
 			width: 35px;
@@ -2393,7 +2393,7 @@
 		}
 		
 		.icon.ffmpeg {
-			background-image: url(../../images/ffmpeg.png);
+			background-image: url(../../images/ffmpeg.jpg);
 			background-size: contain;
 			display: inline-block;
 			width: 35px;
@@ -2403,7 +2403,7 @@
 		}
 		
 		.icon.blender {
-			background-image: url(../../images/blender.png);
+			background-image: url(../../images/blender.jpg);
 			background-size: contain;
 			display: inline-block;
 			width: 35px;
@@ -2412,7 +2412,7 @@
 		}
 		
 		.icon.scilab {
-			background-image: url(../../images/scilab.png);
+			background-image: url(../../images/scilab.jpg);
 			background-size: contain;
 			display: inline-block;
 			width: 35px;
@@ -3016,7 +3016,7 @@
 			-ms-transition: opacity 1.5s ease-in-out, visibility 1.5s;
 			transition: opacity 1.5s ease-in-out, visibility 1.5s;
 			content: '';
-			background-image: url(../../images/equithirds_by_teundenouden-dc92u9s-blur.png);
+			background-image: url(../../images/equithirds_by_teundenouden-dc92u9s-blur.jpg);
 			background-attachment: fixed;
 			background-position: center;
 			background-repeat: no-repeat;
