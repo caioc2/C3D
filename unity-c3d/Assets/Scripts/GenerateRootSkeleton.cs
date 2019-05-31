@@ -36,7 +36,7 @@ public class GenerateRootSkeleton {
             float rs = meanStep + varStep * MyRandom.nrand();
             Vector3 rp = new Vector3(MyRandom.rand() - 0.5f, 0.0f, MyRandom.rand() - 0.5f);
             Vector3 normal = Vector3.Cross(Vector3.Cross(dir, rp), dir);
-            Vector3 planeRotDir = planar ? rotate(dir, new Vector3(0.0f, 1.0f, 0.0f), rd1) : rotate(dir, normal, rd1);
+            Vector3 planeRotDir = planar ? rotate(dir, new Vector3(1.0f, 0.0f, 0.0f), rd1) : rotate(dir, normal, rd1);
             Vector3 finalDir = planar ? planeRotDir : rotate(planeRotDir, dir, rd2);
             finalDir *= rs * (float)Math.Pow((double)levelLengthRatio, (double)root[i].level);
             root[i].addPoint(finalDir);
@@ -48,7 +48,7 @@ public class GenerateRootSkeleton {
                 rd2 = nonPAngle * MyRandom.rand();
                 dir = finalDir.normalized * meanStep;
                 rp = new Vector3(MyRandom.rand() - 0.5f, 0.0f, MyRandom.rand() - 0.5f);
-                normal = planar ? new Vector3(0.0f, 1.0f, 0.0f) : Vector3.Cross(Vector3.Cross(dir, rp), dir);
+                normal = planar ? new Vector3(1.0f, 0.0f, 0.0f) : Vector3.Cross(Vector3.Cross(dir, rp), dir);
                 if (MyRandom.rand() > LeftRightRate)
                 {
                     planeRotDir = rotate(dir, normal, rd1);
