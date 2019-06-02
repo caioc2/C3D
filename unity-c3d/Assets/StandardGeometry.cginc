@@ -69,9 +69,9 @@ Attributes Vertex(Attributes input)
 {
     // Only do object space to world space transform.
     input.position = mul(unity_ObjectToWorld, input.position);
-    input.normal = UnityObjectToWorldNormal(input.normal);
-    input.tangent.xyz = UnityObjectToWorldDir(input.tangent.xyz);
-    input.texcoord = TRANSFORM_TEX(input.texcoord, _MainTex);
+    //input.normal = UnityObjectToWorldNormal(input.normal);
+    //input.tangent.xyz = UnityObjectToWorldDir(input.tangent.xyz);
+    //input.texcoord = TRANSFORM_TEX(input.texcoord, _MainTex);
     return input;
 }
 
@@ -114,70 +114,87 @@ float3 ConstructNormal(float3 v1, float3 v2, float3 v3)
     return normalize(cross(v2 - v1, v3 - v1));
 }
 
-[maxvertexcount(15)]
+//return the rotation matrix which transforms vector a(0,1,0) onto b, assumes a and b normalized
+//https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+float3x3 rotationMatrix(float3 b)
+{
+	static const float eps = 1e-10;
+	static const float3 a = float3(0.0f, 1.0f, 0.0f);
+	float3 v = cross(a, b);
+	float c = dot(a, b);
+
+	static const float3x3 id = { 1.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f,
+					0.0f, 0.0f, 1.0f
+	};
+
+	float3x3 vm = { 0.0f, -v.z,  v.y,
+		             v.z, 0.0f, -v.x,
+		            -v.y,  v.x, 0.0f
+
+	};
+
+	vm = id + vm + mul(vm, vm) / (1 + c + eps);
+	return vm;
+}
+
+void transformCircle(float3 p[3], float3 pos, float scale, float3 normal, out float3 ret[3]) {
+	float3x3 rot = rotationMatrix(normal);
+	for (uint i = 0; i < 3; ++i) {
+		ret[i] = mul(rot, p[i] * scale) + pos;
+	}
+}
+
+[maxvertexcount(8)]
 void Geometry(
     triangle Attributes input[3], uint pid : SV_PrimitiveID,
     inout TriangleStream<Varyings> outStream
 )
 {
-	outStream.Append(VertexOutput(input[0].position, input[0].normal, input[0].tangent, input[0].texcoord));
-	outStream.Append(VertexOutput(input[1].position, input[1].normal, input[1].tangent, input[1].texcoord));
-	outStream.Append(VertexOutput(input[2].position, input[2].normal, input[2].tangent, input[2].texcoord));
+	//Circle discretized in 3 points
+	static const float PI = 3.14159265f;
+	static const float t0 = 0.0f;
+	static const float t1 = (2.0f * PI) / 3.0f;
+	static const float t2 = (4.0f * PI) / 3.0f;
+
+	static const float3 c[3] = { float3(cos(t0), 0.0f, sin(t0)),
+								 float3(cos(t1), 0.0f, sin(t1)),
+								 float3(cos(t2), 0.0f, sin(t2)) };
+
+	float3 p0 = input[0].position.xyz;
+	float3 p1 = input[1].position.xyz;
+
+	half3 n0 = normalize(half3(p1 - p0));
+	half3 n1 = normalize(half3(input[2].position.xyz - p1));
+	//tree diameter at node i stored in the texcoord.x
+	float s0 = input[0].texcoord.x;
+	float s1 = input[1].texcoord.x;
+
+	float3 a[3], b[3];
+
+	transformCircle(c, p0, s0, n0, a);
+	transformCircle(c, p1, s1, n1, b);
+
+	//Make triangle stream a0, b0, a1, b1, a2, b2, a0, b0.
+	/*outStream.Append(VertexOutput(a[0], normalize(half3((a[0]+a[1])/2.0f - p0)), half4(normalize(cross(normalize(half3(a[0] - p0)), n0)), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[0], normalize(half3((b[0]+b[1]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[0] - p1)), n1)), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[1], normalize(half3((a[1]+a[2]) / 2.0f - p0)), half4(normalize(cross(normalize(half3(a[1] - p0)), n0)), 1.0f), float2(1.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[1], normalize(half3((b[1]+b[2]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[1] - p1)), n1)), 1.0f), float2(1.0f / 3.0f, input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[2], normalize(half3((a[2]+a[0]) / 2.0f - p0)), half4(normalize(cross(normalize(half3(a[2] - p0)), n0)), 1.0f), float2(2.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[2], normalize(half3((b[2]+b[0]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[2] - p1)), n1)), 1.0f), float2(2.0f / 3.0f, input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[0], normalize(half3((a[0]+a[1]) / 2.0f - p0)), half4(normalize(cross(normalize(half3(a[0] - p1)), n0)), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[0], normalize(half3((b[0]+b[1]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[0] - p1)), n1)), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
+	outStream.RestartStrip();*/
+
+	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[1], normalize(half3(a[1] - p0)), half4(normalize(a[2] - a[1]), 1.0f), float2(1.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[1], normalize(half3(b[1] - p1)), half4(normalize(b[2] - b[1]), 1.0f), float2(1.0f / 3.0f, input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[2], normalize(half3(a[2] - p0)), half4(normalize(a[0] - a[2]), 1.0f), float2(2.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[2], normalize(half3(b[2] - p1)), half4(normalize(b[0] - b[2]), 1.0f), float2(2.0f / 3.0f, input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
 	outStream.RestartStrip();
-	/*
-    // Vertex inputs
-    float3 wp0 = input[0].position.xyz;
-    float3 wp1 = input[1].position.xyz;
-    float3 wp2 = input[2].position.xyz;
-
-    float2 uv0 = input[0].texcoord;
-    float2 uv1 = input[1].texcoord;
-    float2 uv2 = input[2].texcoord;
-
-    // Extrusion amount
-    float ext = saturate(0.4 - cos(_LocalTime * UNITY_PI * 2) * 0.41);
-    ext *= _extStrenght * (1 + 0.3 * sin(pid * 832.37843 + _LocalTime * 88.76));
-
-    // Extrusion points
-    float3 offs = ConstructNormal(wp0, wp1, wp2) * ext;
-    float3 wp3 = wp0 + offs;
-    float3 wp4 = wp1 + offs;
-    float3 wp5 = wp2 + offs;
-
-    // Cap triangle
-    float3 wn = ConstructNormal(wp3, wp4, wp5);
-    float np = saturate(ext * 10);
-    float3 wn0 = lerp(input[0].normal, wn, np);
-    float3 wn1 = lerp(input[1].normal, wn, np);
-    float3 wn2 = lerp(input[2].normal, wn, np);
-    outStream.Append(VertexOutput(wp3, wn0, input[0].tangent, uv0));
-    outStream.Append(VertexOutput(wp4, wn1, input[1].tangent, uv1));
-    outStream.Append(VertexOutput(wp5, wn2, input[2].tangent, uv2));
-    outStream.RestartStrip();
-
-    // Side faces
-    float4 wt = float4(normalize(wp3 - wp0), 1); // world space tangent
-    wn = ConstructNormal(wp3, wp0, wp4);
-    outStream.Append(VertexOutput(wp3, wn, wt, uv0));
-    outStream.Append(VertexOutput(wp0, wn, wt, uv0));
-    outStream.Append(VertexOutput(wp4, wn, wt, uv1));
-    outStream.Append(VertexOutput(wp1, wn, wt, uv1));
-    outStream.RestartStrip();
-
-    wn = ConstructNormal(wp4, wp1, wp5);
-    outStream.Append(VertexOutput(wp4, wn, wt, uv1));
-    outStream.Append(VertexOutput(wp1, wn, wt, uv1));
-    outStream.Append(VertexOutput(wp5, wn, wt, uv2));
-    outStream.Append(VertexOutput(wp2, wn, wt, uv2));
-    outStream.RestartStrip();
-
-    wn = ConstructNormal(wp5, wp2, wp3);
-    outStream.Append(VertexOutput(wp5, wn, wt, uv2));
-    outStream.Append(VertexOutput(wp2, wn, wt, uv2));
-    outStream.Append(VertexOutput(wp3, wn, wt, uv0));
-    outStream.Append(VertexOutput(wp0, wn, wt, uv0));
-    outStream.RestartStrip();
-	*/
 }
 
 //

@@ -54,7 +54,7 @@ public class CameraControl : MonoBehaviour {
 
         if (Input.GetKey(KeyCode.Escape))
         {
-            disableRotation = true;
+            //disableRotation = true;
         }
         if (Input.GetKey(KeyCode.Return))
         {

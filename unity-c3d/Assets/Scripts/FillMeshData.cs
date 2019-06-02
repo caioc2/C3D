@@ -209,4 +209,119 @@ public class FillMeshData {
         }
         return ii;
     }
+
+    public static int fillVerticesTrianglesGeomShader(List<Vector3> vertices,
+                                             List<int> triangles,
+                                             List<Vector2> uv,
+                                             List<MyTreeNode> root,
+                                             float epoch,
+                                             float maxGrowth,
+                                             float growRate,
+                                             float diamLengthScale,
+                                             float texScale,
+                                             float LOD)
+    {
+        int ii = 0;
+        for (; ii < root.Count; ii++)
+        {
+            MyTreeNode node = root[ii];
+
+            float maxEpochF = Math.Max(0.0f, epoch - node.epoch);
+            int maxEpoch = (int)Math.Floor(maxEpochF);
+            float last = maxEpochF - (float)maxEpoch;
+            int maxCount = Math.Min(node.points.Count, maxEpoch);
+
+            if (node.epoch > epoch)
+                break;// continue;
+
+            //assumes root is somewhat ordered, "node =  root[i]" and "parent = root[j]" -> j < i
+            preProcessLength(root, ii, epoch, maxGrowth, growRate);
+
+            MyTreeNode parent = root[node.parentId];
+            node.maxDiameter = Math.Min(parent.maxDiameter, (parent.length - node.startLen) * diamLengthScale);
+
+            float curLen = node.length;
+
+            int vsi = vertices.Count;
+            int tsi = triangles.Count;
+
+            Vector3 curPos = node.startPos;
+
+            //Vector3[] surfPoints = FullTransform(shape, orientation, node.points[0], curPos, node.maxDiameter);
+            vertices.Add(curPos);
+            uv.Add(new Vector2(node.maxDiameter, 0.0f));
+
+            int skipped = 0;
+            float dlen = 0.0f;
+
+            int lastChild = -1;
+            for (int j = 0; j < maxCount; ++j)
+            {
+                Vector3 p = node.points[j] * (1.0f + (Math.Min(maxEpochF - j, maxGrowth) * growRate));
+                curPos += p;
+                curLen -= p.magnitude;
+
+                dlen += p.magnitude;
+
+                bool haveChild = false;
+                if (node.childrenStartIdx.Count > 0 && j <= node.childrenStartIdx[node.childrenStartIdx.Count - 1])
+                {
+                    for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
+                    {
+                        if (j == node.childrenStartIdx[k])
+                        {
+                            lastChild = k;
+                            haveChild = true;
+                        }
+                    }
+                }
+
+                if (dlen < LOD && j != maxCount - 1 && !haveChild)
+                {
+                    skipped += 1;
+                    continue;
+                }
+                else
+                {
+                    dlen = 0.0f;
+
+                    float maxDiam = Math.Min(node.maxDiameter, diamLengthScale * curLen);
+                    //surfPoints = FullTransform(shape, orientation, node.points[j], curPos, maxDiam);
+                    float circLen = (float)(2.0f * Math.PI * maxDiam);
+                    //store current root point position to processed in the shader: point -> circle
+                    vertices.Add(curPos);
+                    //store current point diameter and vertical texture position
+                    uv.Add(new Vector2(maxDiam, texScale * (node.length - curLen) / circLen));
+                }
+            }
+
+            maxCount -= skipped;
+            //Dummy triangles i, i+1, i+2
+            for (int j = 0; j < maxCount - 2; ++j)
+            {
+                int[] tt = {  vsi +  j     ,
+                              vsi + (j + 1),
+                              vsi + (j + 2) };
+                triangles.AddRange(tt);
+            }
+
+            /*if (maxCount < node.points.Count)
+            {
+                vertices.Add(curPos + node.points[maxCount] * last);
+                uv.Add(new Vector2(0.0001f, node.length));
+                if(maxCount >= 3){
+                    int lastPoint1 = vertices.Count - 1;
+                    int[] ttt1 = { lastPoint1 - 2, lastPoint1 - 1, lastPoint1 };
+                    triangles.AddRange(ttt1);
+                }
+            }
+            //Dummy vertex, in case there are not enough vertices to make a triangle
+            vertices.Add(curPos + node.points[Math.Min(maxCount, node.points.Count - 1)] * 1.001f * last);
+            uv.Add(new Vector2(0.0001f, node.length));
+            int lastPoint = vertices.Count - 1;
+            int[] ttt = { lastPoint - 2, lastPoint - 1, lastPoint };
+            triangles.AddRange(ttt);*/
+        }
+        return ii;
+    }
 }

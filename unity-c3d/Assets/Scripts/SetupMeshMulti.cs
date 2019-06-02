@@ -144,7 +144,7 @@ public class SetupMeshMulti {
         int[] counter = new int[root.Length];
         for (int i = 0; i < counter.Length; ++i) counter[i] = 0;
 
-        int nt = Math.Max(1, Environment.ProcessorCount/2);
+        int nt = Math.Max(1, Environment.ProcessorCount/2), maxThreads;
         Thread[] td = new Thread[nt];
         for (int i = 0; i < nt; i++)
         {
@@ -186,7 +186,65 @@ public class SetupMeshMulti {
             {
                 total += numTri[i];
             }
-            //Debug.Log("Total Number of Triangles: " + total);
+        }
+    }
+
+    public void updateSingle(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
+                       float maxGrowth,
+                       float growRate,
+                       float diamLengthScale,
+                       int numCircPoints,
+                       Vector3[] shape,
+                       float[] coords,
+                       float texScale,
+                       float LOD)
+    {
+        List<int> toProcess = new List<int>();
+        for (int i = 0; i < root.Length; ++i)
+        {
+            if (root == null || root[i] == null) continue;
+
+            count[i] = root[i].Count;
+            if (last_t < maxTime[i])
+            {
+                toProcess.Add(i);
+            }
+        }
+
+        int[] counter = new int[root.Length];
+        for (int i = 0; i < counter.Length; ++i) counter[i] = 0;
+
+
+        float curTime = t;
+        for (int j = 0; j < toProcess.Count; ++j)
+        {
+            int idx = toProcess[j];
+            count[idx] = processMesh(root[idx], curTime, idx,
+                                        maxGrowth,
+                                        growRate,
+                                        diamLengthScale,
+                                        numCircPoints,
+                                        shape,
+                                        coords,
+                                        texScale,
+                                        LOD);
+            counter[idx]++;
+        }
+
+        for (int i = 0; i < toProcess.Count; ++i)
+        {
+            int idx = toProcess[i];
+            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(), vertices[idx], uv[idx], triangles[idx]);
+            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], root[idx].Count);
+        }
+
+        if (toProcess.Count > 0)
+        {
+            long total = 0;
+            for (int i = 0; i < numTri.Length; ++i)
+            {
+                total += numTri[i];
+            }
         }
     }
 }
