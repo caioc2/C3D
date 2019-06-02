@@ -227,7 +227,7 @@ void Fragment(
 )
 {
     // Sample textures
-    half3 albedo = tex2D(_MainTex, input.texcoord).rgb * _Color.rgb;
+	half3 albedo = tex2D(_MainTex, input.texcoord).rgb * _Color.rgb;
 
     half4 normal = tex2D(_BumpMap, input.texcoord);
     normal.xyz = UnpackScaleNormal(normal, _BumpScale);
@@ -244,7 +244,7 @@ void Fragment(
     );
 
     // Tangent space conversion (tangent space normal -> world space normal)
-    float3 wn = normalize(float3(
+	float3 wn =  normalize(float3(
         dot(input.tspace0.xyz, normal),
         dot(input.tspace1.xyz, normal),
         dot(input.tspace2.xyz, normal)

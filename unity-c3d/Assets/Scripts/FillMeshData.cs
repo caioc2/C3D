@@ -297,7 +297,7 @@ public class FillMeshData {
 
             maxCount -= skipped;
             //Dummy triangles i, i+1, i+2
-            for (int j = 0; j < maxCount - 2; ++j)
+            for (int j = 0; j <= maxCount - 2; ++j)
             {
                 int[] tt = {  vsi +  j     ,
                               vsi + (j + 1),
@@ -305,7 +305,7 @@ public class FillMeshData {
                 triangles.AddRange(tt);
             }
 
-            /*if (maxCount < node.points.Count)
+            if (maxCount < node.points.Count)
             {
                 vertices.Add(curPos + node.points[maxCount] * last);
                 uv.Add(new Vector2(0.0001f, node.length));
@@ -320,7 +320,7 @@ public class FillMeshData {
             uv.Add(new Vector2(0.0001f, node.length));
             int lastPoint = vertices.Count - 1;
             int[] ttt = { lastPoint - 2, lastPoint - 1, lastPoint };
-            triangles.AddRange(ttt);*/
+            triangles.AddRange(ttt);
         }
         return ii;
     }
