@@ -139,13 +139,16 @@ public class root_of_shame : MonoBehaviour {
     {
 #if !USE_GEOM_SHADER
         mt = new SetupMeshMulti();
+        Material mat = defMat;
 #else
         gs =  new SetupMeshGeomShader();
+        Material mat = geomMat;
 #endif
         comp = (root_component[])transform.GetComponentsInChildren<root_component>();
         root = new List<MyTreeNode>[comp.Length];
         for (int i = 0; i < comp.Length; ++i)
         {
+            (comp[i].GetComponent<MeshRenderer>()).material = mat;
             root[i] = GenerateRootSkeleton.generateSkeleton(comp[i],
                                                             useGlobalEpoch,
                                                             minEpoch,
