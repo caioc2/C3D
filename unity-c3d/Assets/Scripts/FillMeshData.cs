@@ -210,9 +210,9 @@ public class FillMeshData {
         return ii;
     }
 
-    public static int fillVerticesTrianglesGeomShader(List<Vector3> vertices,
-                                             List<int> triangles,
-                                             List<Vector2> uv,
+    public static int fillVerticesTrianglesGeomShader(Vector3[] vertices,
+                                             int[] triangles,
+                                             Vector2[] uv,
                                              List<MyTreeNode> root,
                                              float epoch,
                                              float maxGrowth,
@@ -222,6 +222,8 @@ public class FillMeshData {
                                              float LOD)
     {
         int ii = 0;
+        int vsi = 0;
+        int tsi = 0;
         for (; ii < root.Count; ii++)
         {
             MyTreeNode node = root[ii];
@@ -242,14 +244,13 @@ public class FillMeshData {
 
             float curLen = node.length;
 
-            int vsi = vertices.Count;
-            int tsi = triangles.Count;
-
             Vector3 curPos = node.startPos;
 
             //Vector3[] surfPoints = FullTransform(shape, orientation, node.points[0], curPos, node.maxDiameter);
-            vertices.Add(curPos);
-            uv.Add(new Vector2(node.maxDiameter, 0.0f));
+            int startVsi = vsi;
+            vertices[vsi].x = curPos.x; vertices[vsi].y = curPos.y; vertices[vsi].z = curPos.z;
+            uv[vsi].x = node.maxDiameter; uv[vsi].y = 0.0f;
+            vsi++;
 
             int skipped = 0;
             float dlen = 0.0f;
@@ -288,40 +289,53 @@ public class FillMeshData {
                     float maxDiam = Math.Min(node.maxDiameter, diamLengthScale * curLen);
                     //surfPoints = FullTransform(shape, orientation, node.points[j], curPos, maxDiam);
                     float circLen = (float)(2.0f * Math.PI * maxDiam);
+
                     //store current root point position to processed in the shader: point -> circle
-                    vertices.Add(curPos);
+                    //Debug.Log("Size: " + vertices.Length + " index: " + vsi + " maxCount: " + maxCount + " ii: " + ii + " rootCount: " + root.Count);
+                    vertices[vsi].x = curPos.x; vertices[vsi].y = curPos.y; vertices[vsi].z = curPos.z;
                     //store current point diameter and vertical texture position
-                    uv.Add(new Vector2(maxDiam, texScale * (node.length - curLen) / circLen));
+                    uv[vsi].x = maxDiam; uv[vsi].y = texScale * (node.length - curLen) / circLen;
+                    vsi++;
                 }
             }
 
             maxCount -= skipped;
             //Dummy triangles i, i+1, i+2
-            for (int j = 0; j <= maxCount - 2; ++j)
+            for (int j = 0; j <= maxCount-2; ++j)
             {
-                int[] tt = {  vsi +  j     ,
-                              vsi + (j + 1),
-                              vsi + (j + 2) };
-                triangles.AddRange(tt);
+                triangles[tsi] = startVsi + j;
+                triangles[tsi+1] = startVsi + j + 1;
+                triangles[tsi+2] = startVsi + j + 2;
+                tsi += 3;
             }
 
             if (maxCount < node.points.Count)
             {
-                vertices.Add(curPos + node.points[maxCount] * last);
-                uv.Add(new Vector2(0.0001f, node.length));
-                if(maxCount >= 3){
-                    int lastPoint1 = vertices.Count - 1;
-                    int[] ttt1 = { lastPoint1 - 2, lastPoint1 - 1, lastPoint1 };
-                    triangles.AddRange(ttt1);
+                curPos = curPos + node.points[maxCount] * last;
+                vertices[vsi].x = curPos.x; vertices[vsi].y = curPos.y; vertices[vsi].z = curPos.z;
+                uv[vsi].x = 0.0001f; uv[vsi].y = node.length;
+                vsi++;
+                if (maxCount >= 3){
+                    int lastPoint1 = vsi- 1;
+
+                    triangles[tsi] = lastPoint1 - 2;
+                    triangles[tsi + 1] = lastPoint1 - 1;
+                    triangles[tsi + 2] = lastPoint1;
+                    tsi += 3;
                 }
             }
             //Dummy vertex, in case there are not enough vertices to make a triangle
-            vertices.Add(curPos + node.points[Math.Min(maxCount, node.points.Count - 1)] * 1.001f * last);
-            uv.Add(new Vector2(0.0001f, node.length));
-            int lastPoint = vertices.Count - 1;
-            int[] ttt = { lastPoint - 2, lastPoint - 1, lastPoint };
-            triangles.AddRange(ttt);
+            curPos *= 1.001f;
+            vertices[vsi].x = curPos.x; vertices[vsi].y = curPos.y; vertices[vsi].z = curPos.z;
+            uv[vsi].x = 0.0001f; uv[vsi].y = node.length;
+            vsi++;
+            int lastPoint = vsi - 1;
+
+            triangles[tsi] = lastPoint - 2;
+            triangles[tsi + 1] = lastPoint - 1;
+            triangles[tsi + 2] = lastPoint;
+            tsi += 3;
         }
-        return ii;
+        return vsi;
     }
 }
