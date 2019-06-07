@@ -10,7 +10,7 @@ using System.Threading;
 public class root_of_shame : MonoBehaviour {
 
     [Header("Start position")]
-    public Vector3 startPosition  = new Vector3(0.0f, 0.0f, 0.0f);
+    private Vector3 startPosition  = new Vector3(0.0f, 0.0f, 0.0f);
     public Vector3 startDirection  = new Vector3(0.0f, 1.0f, 0.0f);
 
     [Header("Step and length")]
@@ -55,7 +55,7 @@ public class root_of_shame : MonoBehaviour {
     [Range(0, 100000)]
     public int maxIterations       = 2000;
 
-    [Header("Surface discretization")]
+    [Header("Surface discretization (CPU only)")]
     [Range(3, 30)]
     public int numCircPoints       = 4;
     [Header("2D/3D")]
@@ -81,6 +81,8 @@ public class root_of_shame : MonoBehaviour {
     public Material defMat;
     [Header("Geometry Shader Material")]
     public Material geomMat;
+    [Header("Force update every frame (benchmark)")]
+    public  bool forceUpdate = false;
 
     private DayNightCycle dnc;
 
@@ -105,12 +107,12 @@ public class root_of_shame : MonoBehaviour {
         mt.setCapacity(root, numCircPoints);
     }
 
-    void updateMesh(float t, float last_t)
+    bool updateMesh(float t, float last_t)
     {
 #if USE_MULTI_THREAD
-        mt.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD);
+        return mt.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD, forceUpdate);
 #else
-        mt.updateSingle(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD);
+        return mt.updateSingle(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD, forceUpdate);
 #endif
     }
 #else
@@ -125,18 +127,19 @@ public class root_of_shame : MonoBehaviour {
         gs.setCapacity(root);
     }
 
-    void updateMesh(float t, float last_t)
+    bool updateMesh(float t, float last_t)
     {
 #if USE_MULTI_THREAD
-        gs.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD);
+        return gs.update(root,  comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD, forceUpdate);
 #else
-        gs.updateSingle(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD);
+        return gs.updateSingle(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD, forceUpdate);
 #endif
     }
 #endif
 
     void Awake()
     {
+
 #if !USE_GEOM_SHADER
         mt = new SetupMeshMulti();
         Material mat = defMat;
@@ -221,6 +224,8 @@ public class root_of_shame : MonoBehaviour {
 
     bool toggle = false;
     float last_t;
+    long frameCount = 0;
+    bool once = true;
     void Update()
     {
         float LocalSpeed = speed;
@@ -247,6 +252,13 @@ public class root_of_shame : MonoBehaviour {
 
         if (comp == null) return;
 
-        updateMesh(t, last_t);
+        if(!updateMesh(t, last_t) && once)
+        {
+            Debug.Log("Avg Frames: " + frameCount / Time.timeSinceLevelLoad);
+            once = false;
+        } else
+        {
+            frameCount++;
+        }
     }
 }

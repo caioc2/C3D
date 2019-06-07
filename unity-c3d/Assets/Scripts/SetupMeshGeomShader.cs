@@ -35,7 +35,7 @@ public class SetupMeshGeomShader {
     }
 
 
-    public void setCapacity(List<MyTreeNode>[] root)
+    public void setCapacity( List<MyTreeNode>[] root)
     {
         for (int i = 0; i < root.Length; ++i)
         {
@@ -55,7 +55,7 @@ public class SetupMeshGeomShader {
         }
     }
 
-    void setupMesh(Mesh mesh, ParticleSystem ps, List<Vector3> v, List<Vector2> uv, List<int> tri)
+    void setupMesh(Mesh mesh, ParticleSystem ps,  List<Vector3> v,  List<Vector2> uv,  List<int> tri)
     {
         mesh.Clear();
         mesh.SetVertices(v);
@@ -99,7 +99,7 @@ public class SetupMeshGeomShader {
         vertices[i].Clear();
         triangles[i].Clear();
         uv[i].Clear();
-        int ret = FillMeshData.fillVerticesTrianglesGeomShader(vertices[i], triangles[i], uv[i], root, time,
+        int ret = FillMeshData.fillVerticesTrianglesGeomShader( vertices[i],  triangles[i],  uv[i],  root, time,
                                                     maxGrowth,
                                                     growRate,
                                                     diamLengthScale,
@@ -109,12 +109,13 @@ public class SetupMeshGeomShader {
         return ret;
     }
 
-    public void update(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
+    public bool update(List<MyTreeNode>[] root,  root_component[] comp, float t, float last_t, bool isNight,
                        float maxGrowth,
                        float growRate,
                        float diamLengthScale,
                        float texScale,
-                       float LOD)
+                       float LOD,
+                       bool forceU)
     {
         List<int> toProcess = new List<int>();
         for (int i = 0; i < root.Length; ++i)
@@ -122,7 +123,7 @@ public class SetupMeshGeomShader {
             if (root == null || root[i] == null) continue;
 
             count[i] = root[i].Count;
-            if (last_t < maxTime[i])
+            if (last_t < maxTime[i] || forceUpdate)
             {
                 toProcess.Add(i);
             }
@@ -131,7 +132,7 @@ public class SetupMeshGeomShader {
         int[] counter = new int[root.Length];
         for (int i = 0; i < counter.Length; ++i) counter[i] = 0;
 
-        int nt = Math.Max(1, Environment.ProcessorCount / 2), maxThreads;
+        int nt = Math.Max(1, Environment.ProcessorCount);
         Thread[] td = new Thread[nt];
         for (int i = 0; i < nt; i++)
         {
@@ -159,26 +160,20 @@ public class SetupMeshGeomShader {
         for (int i = 0; i < toProcess.Count; ++i)
         {
             int idx = toProcess[i];
-            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(), vertices[idx], uv[idx], triangles[idx]);
+            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(),  vertices[idx],  uv[idx],  triangles[idx]);
             setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], root[idx].Count);
         }
 
-        if (toProcess.Count > 0)
-        {
-            long total = 0;
-            for (int i = 0; i < numTri.Length; ++i)
-            {
-                total += numTri[i];
-            }
-        }
+        return toProcess.Count > 0;
     }
 
-    public void updateSingle(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
+    public bool updateSingle( List<MyTreeNode>[] root,  root_component[] comp, float t, float last_t, bool isNight,
                        float maxGrowth,
                        float growRate,
                        float diamLengthScale,
                        float texScale,
-                       float LOD)
+                       float LOD,
+                       bool forceUpdate)
     {
         List<int> toProcess = new List<int>();
         for (int i = 0; i < root.Length; ++i)
@@ -186,11 +181,12 @@ public class SetupMeshGeomShader {
             if (root == null || root[i] == null) continue;
 
             count[i] = root[i].Count;
-            if (last_t < maxTime[i])
+            if (last_t < maxTime[i] || forceUpdate)
             {
                 toProcess.Add(i);
             }
         }
+        
 
         int[] counter = new int[root.Length];
         for (int i = 0; i < counter.Length; ++i) counter[i] = 0;
@@ -213,18 +209,10 @@ public class SetupMeshGeomShader {
         for (int i = 0; i < toProcess.Count; ++i)
         {
             int idx = toProcess[i];
-            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(), vertices[idx], uv[idx], triangles[idx]);
+            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(),  vertices[idx],  uv[idx],  triangles[idx]);
             setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], root[idx].Count);
         }
 
-        if (toProcess.Count > 0)
-        {
-            long total = 0;
-            for (int i = 0; i < numTri.Length; ++i)
-            {
-                total += numTri[i];
-            }
-            //Debug.Log("Total Number of Triangles: " + total);
-        }
+        return toProcess.Count > 0;
     }
 }

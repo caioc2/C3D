@@ -138,28 +138,35 @@ float3x3 rotationMatrix(float3 b)
 	return vm;
 }
 
-void transformCircle(float3 p[3], float3 pos, float scale, float3 normal, out float3 ret[3]) {
+#define nc (10)
+#define PI (3.14159265f)
+
+
+void transformCircle(float3 p[nc], float3 pos, float scale, float3 normal, out float3 ret[nc]) {
 	float3x3 rot = rotationMatrix(normal);
-	for (uint i = 0; i < 3; ++i) {
+	for (uint i = 0; i < nc; ++i) {
 		ret[i] = mul(rot, p[i] * scale) + pos;
 	}
 }
-
-[maxvertexcount(8)]
+[maxvertexcount(nc*2+2)]
 void Geometry(
     triangle Attributes input[3], uint pid : SV_PrimitiveID,
     inout TriangleStream<Varyings> outStream
 )
 {
-	//Circle discretized in 3 points
-	static const float PI = 3.14159265f;
-	static const float t0 = 0.0f;
-	static const float t1 = (2.0f * PI) / 3.0f;
-	static const float t2 = (4.0f * PI) / 3.0f;
+	if (length(input[2].position.xyz) == 0.0f) return;
 
-	static const float3 c[3] = { float3(cos(t0), 0.0f, sin(t0)),
+
+	//Circle discretized in nc points
+	static float3 c[nc];
+	for (uint i = 0; i < nc; ++i) {
+		float t = 2.0f*PI*i / (nc*1.0f);
+		c[i] = float3(cos(t), 0.0f, sin(t));
+	}
+
+	/*static const float3 c[3] = { float3(cos(t0), 0.0f, sin(t0)),
 								 float3(cos(t1), 0.0f, sin(t1)),
-								 float3(cos(t2), 0.0f, sin(t2)) };
+								 float3(cos(t2), 0.0f, sin(t2)) };*/
 
 	float3 p0 = input[0].position.xyz;
 	float3 p1 = input[1].position.xyz;
@@ -170,23 +177,22 @@ void Geometry(
 	float s0 = input[0].texcoord.x;
 	float s1 = input[1].texcoord.x;
 
-	float3 a[3], b[3];
+	float3 a[nc], b[nc];
 
 	transformCircle(c, p0, s0, n0, a);
 	transformCircle(c, p1, s1, n1, b);
 
-	//Make triangle stream a0, b0, a1, b1, a2, b2, a0, b0.
-	/*outStream.Append(VertexOutput(a[0], normalize(half3((a[0]+a[1])/2.0f - p0)), half4(normalize(cross(normalize(half3(a[0] - p0)), n0)), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[0], normalize(half3((b[0]+b[1]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[0] - p1)), n1)), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[1], normalize(half3((a[1]+a[2]) / 2.0f - p0)), half4(normalize(cross(normalize(half3(a[1] - p0)), n0)), 1.0f), float2(1.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[1], normalize(half3((b[1]+b[2]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[1] - p1)), n1)), 1.0f), float2(1.0f / 3.0f, input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[2], normalize(half3((a[2]+a[0]) / 2.0f - p0)), half4(normalize(cross(normalize(half3(a[2] - p0)), n0)), 1.0f), float2(2.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[2], normalize(half3((b[2]+b[0]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[2] - p1)), n1)), 1.0f), float2(2.0f / 3.0f, input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[0], normalize(half3((a[0]+a[1]) / 2.0f - p0)), half4(normalize(cross(normalize(half3(a[0] - p1)), n0)), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[0], normalize(half3((b[0]+b[1]) / 2.0f - p1)), half4(normalize(cross(normalize(half3(b[0] - p1)), n1)), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
-	outStream.RestartStrip();*/
+	for (uint i = 0; i < nc - 1; ++i) {
+		outStream.Append(VertexOutput(a[i], normalize(half3(a[i] - p0)), half4(normalize(a[i+1] - a[i]), 1.0f), float2(i / (nc*1.0f), input[0].texcoord.y)));
+		outStream.Append(VertexOutput(b[i], normalize(half3(b[i] - p1)), half4(normalize(b[i+1] - b[i]), 1.0f), float2(i / (nc*1.0f), input[1].texcoord.y)));
+	}
+	outStream.Append(VertexOutput(a[nc-1], normalize(half3(a[nc - 1] - p0)), half4(normalize(a[0] - a[nc - 1]), 1.0f), float2((nc - 1.0f) / (nc*1.0f), input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[nc - 1], normalize(half3(b[nc - 1] - p1)), half4(normalize(b[0] - b[nc - 1]), 1.0f), float2((nc-1.0f) / (nc*1.0f), input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / (nc*1.0f), input[0].texcoord.y)));
+	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / (nc*1.0f), input[1].texcoord.y)));
+	outStream.RestartStrip();
 
-	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
+	/*outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
 	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
 	outStream.Append(VertexOutput(a[1], normalize(half3(a[1] - p0)), half4(normalize(a[2] - a[1]), 1.0f), float2(1.0f / 3.0f, input[0].texcoord.y)));
 	outStream.Append(VertexOutput(b[1], normalize(half3(b[1] - p1)), half4(normalize(b[2] - b[1]), 1.0f), float2(1.0f / 3.0f, input[1].texcoord.y)));
@@ -194,7 +200,7 @@ void Geometry(
 	outStream.Append(VertexOutput(b[2], normalize(half3(b[2] - p1)), half4(normalize(b[0] - b[2]), 1.0f), float2(2.0f / 3.0f, input[1].texcoord.y)));
 	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
 	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
-	outStream.RestartStrip();
+	outStream.RestartStrip();*/
 }
 
 //
