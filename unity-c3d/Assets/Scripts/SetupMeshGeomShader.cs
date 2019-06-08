@@ -9,9 +9,9 @@ public class SetupMeshGeomShader {
     private List<Vector3[]> vertices;
     private List<Vector2[]> uv;
     private List<int[]> triangles;
-    int[] count;
+    int[] VCount;
+    int[] TCount;
     int[] maxTime;
-    float[] last_t;
     public SetupMeshGeomShader()
     {
 
@@ -22,9 +22,9 @@ public class SetupMeshGeomShader {
         vertices = new List<Vector3[]>();
         uv = new List<Vector2[]>();
         triangles = new List<int[]>();
-        count = new int[numTrees];
+        VCount = new int[numTrees];
+        TCount = new int[numTrees];
         maxTime = new int[numTrees];
-        last_t = new float[numTrees];
     }
 
 
@@ -48,12 +48,16 @@ public class SetupMeshGeomShader {
         }
     }
 
-    void setupMesh(Mesh mesh, ParticleSystem ps,  Vector3[] v,  Vector2[] uv,  int[] tri, int count)
+    void setupMesh(Mesh mesh, ParticleSystem ps,  Vector3[] v,  Vector2[] uv,  int[] tri, int VCount, int TCount)
     {
         mesh.Clear();
-        mesh.vertices=v;
-        mesh.triangles=tri;
-        mesh.uv=uv;
+
+        mesh.SetVertices(v, 0, VCount);
+        //mesh.vertices=v;
+        mesh.SetTriangles(tri, 0, TCount, 0);
+        //mesh.triangles=tri;
+        mesh.SetUVs(0, uv, 0, VCount);
+        //mesh.uv=uv;
         
         mesh.RecalculateBounds();
 
@@ -81,42 +85,23 @@ public class SetupMeshGeomShader {
         }
     }
 
-    void clearData(int i)
-    {
-        for(int j = 0; j< vertices[i].Length; ++j)
-        {
-            vertices[i][j].x = vertices[i][j].y = vertices[i][j].z = 0;
-        }
-
-        for (int j = 0; j < uv[i].Length; ++j)
-        {
-            uv[i][j].x = uv[i][j].y;
-        }
-
-        for (int j = 0; j < triangles[i].Length; ++j)
-        {
-            triangles[i][j] = 0;
-        }
-    }
-
-    
-    int processMesh(List<MyTreeNode> root, float time, int i,
+    void processMesh(List<MyTreeNode> root, float time, int i,
                                              float maxGrowth,
                                              float growRate,
                                              float diamLengthScale,
                                              float texScale,
-                                             float LOD)
+                                             float LOD,
+                                             out int VCount,
+                                             out int TCount)
     {
-        if(last_t[i] > time) clearData(i);
-
-        last_t[i] = time;
-        int ret = FillMeshData.fillVerticesTrianglesGeomShader( vertices[i],  triangles[i],  uv[i],  root, time,
+        FillMeshData.fillVerticesTrianglesGeomShader( vertices[i],  triangles[i],  uv[i],  root, time,
                                                     maxGrowth,
                                                     growRate,
                                                     diamLengthScale,
                                                     texScale,
-                                                    LOD);
-        return ret;
+                                                    LOD,
+                                                    out VCount,
+                                                    out TCount);
     }
 
     public bool update(List<MyTreeNode>[] root,  root_component[] comp, float t, float last_t, bool isNight,
@@ -131,8 +116,7 @@ public class SetupMeshGeomShader {
         for (int i = 0; i < root.Length; ++i)
         {
             if (root == null || root[i] == null) continue;
-
-            count[i] = root[i].Count;
+            
             if (last_t < maxTime[i] || forceUpdate)
             {
                 toProcess.Add(i);
@@ -149,12 +133,14 @@ public class SetupMeshGeomShader {
                 for (int j = startIdx; j < toProcess.Count; j += nt)
                 {
                     int idx = toProcess[j];
-                    count[idx] = processMesh(root[idx], curTime, idx,
+                    processMesh(root[idx], curTime, idx,
                                              maxGrowth,
                                              growRate,
                                              diamLengthScale,
                                              texScale,
-                                             LOD);
+                                             LOD,
+                                             out VCount[j],
+                                             out TCount[j]);
                 }
             });
             td[i].Start();
@@ -166,8 +152,8 @@ public class SetupMeshGeomShader {
         for (int i = 0; i < toProcess.Count; ++i)
         {
             int idx = toProcess[i];
-            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(),  vertices[idx],  uv[idx],  triangles[idx], count[idx]);
-            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], root[idx].Count);
+            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(),  vertices[idx],  uv[idx],  triangles[idx], VCount[idx], TCount[idx]);
+            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, VCount[idx], root[idx].Count);
         }
 
         return toProcess.Count > 0;
@@ -185,8 +171,7 @@ public class SetupMeshGeomShader {
         for (int i = 0; i < root.Length; ++i)
         {
             if (root == null || root[i] == null) continue;
-
-            count[i] = root[i].Count;
+            
             if (last_t < maxTime[i] || forceUpdate)
             {
                 toProcess.Add(i);
@@ -197,19 +182,21 @@ public class SetupMeshGeomShader {
         for (int j = 0; j < toProcess.Count; j ++)
         {
             int idx = toProcess[j];
-            count[idx] = processMesh(root[idx], curTime, idx,
+            processMesh(root[idx], curTime, idx,
                                         maxGrowth,
                                         growRate,
                                         diamLengthScale,
                                         texScale,
-                                        LOD);
+                                        LOD,
+                                        out VCount[j],
+                                        out TCount[j]);
         }
 
         for (int i = 0; i < toProcess.Count; ++i)
         {
             int idx = toProcess[i];
-            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(),  vertices[idx],  uv[idx],  triangles[idx], count[idx]);
-            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], vertices[idx].Length);
+            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(),  vertices[idx],  uv[idx],  triangles[idx], VCount[idx], TCount[idx]);
+            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, VCount[idx], vertices[idx].Length);
         }
 
         return toProcess.Count > 0;

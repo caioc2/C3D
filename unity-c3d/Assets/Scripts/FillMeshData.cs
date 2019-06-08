@@ -210,7 +210,7 @@ public class FillMeshData {
         return ii;
     }
 
-    public static int fillVerticesTrianglesGeomShader(Vector3[] vertices,
+    public static void fillVerticesTrianglesGeomShader(Vector3[] vertices,
                                              int[] triangles,
                                              Vector2[] uv,
                                              List<MyTreeNode> root,
@@ -219,7 +219,9 @@ public class FillMeshData {
                                              float growRate,
                                              float diamLengthScale,
                                              float texScale,
-                                             float LOD)
+                                             float LOD,
+                                             out int VCount,
+                                             out int TCount)
     {
         int ii = 0;
         int vsi = 0;
@@ -245,8 +247,7 @@ public class FillMeshData {
             float curLen = node.length;
 
             Vector3 curPos = node.startPos;
-
-            //Vector3[] surfPoints = FullTransform(shape, orientation, node.points[0], curPos, node.maxDiameter);
+            
             int startVsi = vsi;
             vertices[vsi].x = curPos.x; vertices[vsi].y = curPos.y; vertices[vsi].z = curPos.z;
             uv[vsi].x = node.maxDiameter; uv[vsi].y = 0.0f;
@@ -336,6 +337,7 @@ public class FillMeshData {
             triangles[tsi + 2] = lastPoint;
             tsi += 3;
         }
-        return vsi;
+        VCount = vsi;
+        TCount = tsi;
     }
 }
