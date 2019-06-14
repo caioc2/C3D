@@ -28,7 +28,7 @@ public class GenerateRootSkeleton {
                                  int maxNodes,
                                  int minNodesBChild)
     {
-        if (root[i].length < (maxLength * Math.Pow(levelLengthRatio, root[i].level)))
+        if (root[i].length[root[i].length.Count-1] < (maxLength * Math.Pow(levelLengthRatio, root[i].level)))
         {
             Vector3 dir = root[i].points[root[i].points.Count - 1].normalized;
             float rd1 = meanGrowNoiseDir + varGrowNoiseDir * MyRandom.nrand();
@@ -43,7 +43,11 @@ public class GenerateRootSkeleton {
 
             if (MyRandom.rand() < childRate && root[i].level < maxLevel && root.Count < maxNodes && root[i].points.Count > minNodesBChild)
             {
-                MyTreeNode node = new MyTreeNode(root.Count, i, root[i].level + 1, root[i].epoch + root[i].points.Count, root[i].childrenStartIdx.Count);
+                MyTreeNode node = new MyTreeNode(root.Count,
+                                                i, root[i].level + 1,
+                                                root[i].epoch + root[i].points.Count,
+                                                root[i].childrenStartIdx.Count,
+                                                root[i].length[root[i].length.Count - 1]);
                 rd1 = meanChildNoiseDir + varChildNoiseDir * MyRandom.nrand();
                 rd2 = nonPAngle * MyRandom.rand();
                 dir = finalDir.normalized * meanStep;

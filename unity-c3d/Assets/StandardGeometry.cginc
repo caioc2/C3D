@@ -135,7 +135,7 @@ float3x3 rotationMatrix(float3 b)
 	};
 
 	vm = id + vm + mul(vm, vm) / (1 + c + eps);
-	return vm;
+	return vm;// mul(vm, vm);
 }
 
 #define nc (10)
@@ -154,9 +154,6 @@ void Geometry(
     inout TriangleStream<Varyings> outStream
 )
 {
-	if (length(input[2].position.xyz) == 0.0f) return;
-
-
 	//Circle discretized in nc points
 	static float3 c[nc];
 	for (uint i = 0; i < nc; ++i) {

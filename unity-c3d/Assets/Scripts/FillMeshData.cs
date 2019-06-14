@@ -5,20 +5,17 @@ using System;
 
 public class FillMeshData {
 
-    private static Vector3[] FullTransform(Vector3[] v,
+    private unsafe static void FullTransform(Vector3[] v, Vector3* outv, int idx,
                                            Vector3 orientation,
                                            Vector3 normal, 
                                            Vector3 position, 
                                            float scale)
     {
-        Vector3[] ret = new Vector3[v.Length];
-
         var rot = Quaternion.FromToRotation(orientation.normalized, normal.normalized);
         for (int i = 0; i < v.Length; ++i)
         {
-            ret[i] = (rot * (v[i] * scale)) + position;
+            outv[idx+i] = (rot * (v[i] * scale)) + position;
         }
-        return ret;
     }
 
     private static void preProcessLength(List<MyTreeNode> root,
@@ -45,23 +42,23 @@ public class FillMeshData {
         }
 
         int lastIdx = 0;
-        node.length = 0.0f;
+        //node.length = 0.0f;
         Vector3 pos = node.startPos;
 
         for (int j = 0; j <= i; ++j)
         {
             for (int k = lastIdx; k < node.childrenStartIdx[j]; ++k)
             {
-                Vector3 p = node.points[k] * (1.0f + Math.Max(0.0f, Math.Min(maxEpochF - k, maxGrowth)) * growRate);
-                node.length += p.magnitude;
+                Vector3 p = node.points[k];// * (1.0f + Math.Max(0.0f, Math.Min(maxEpochF - k, maxGrowth)) * growRate);
+                //node.length += p.magnitude;
                 pos += p;
             }
             lastIdx = node.childrenStartIdx[j];
-            root[node.childrenId[j]].startLen = node.length;
+            //root[node.childrenId[j]].startLen = node.length;
             root[node.childrenId[j]].startPos = pos;
         }
 
-        for (int k = lastIdx; k < maxCount; ++k)
+        /*for (int k = lastIdx; k < maxCount; ++k)
         {
             node.length += node.points[k].magnitude * (1.0f + Math.Max(0.0f, Math.Min(maxEpochF - k, maxGrowth)) * growRate);
         }
@@ -69,145 +66,175 @@ public class FillMeshData {
         if (maxCount < node.points.Count)
         {
             node.length += node.points[maxCount].magnitude * last;
-        }
+        }*/
     }
 
     
     private static Vector3 orientation = new Vector3(0.0f, 0.0f, 1.0f);
 
-    public static int fillVerticesTriangles(List<Vector3> vertices,
-                                             List<int> triangles,
-                                             List<Vector2> uv, 
+    public static void fillVerticesTriangles(Vector3[] vertices,
+                                             int[] triangles,
+                                             Vector2[] uv, 
                                              List<MyTreeNode> root,
                                              float epoch, 
                                              float maxGrowth, 
                                              float growRate, 
-                                             float diamLengthScale, 
-                                             int numCircPoints, 
+                                             float diamLengthScale,
                                              Vector3[] shape, 
                                              float[] coords,
                                              float texScale,
-                                             float LOD)
+                                             float LOD,
+                                             out int VCount,
+                                             out int TCount)
     {
-
-
-        int ii = 0;
-        for (; ii < root.Count; ii++)
+        //coords.length should be == to shape.length
+        int numCircPoints = shape.Length;
+        unsafe
         {
-            MyTreeNode node = root[ii];
-
-            float maxEpochF = Math.Max(0.0f, epoch - node.epoch);
-            int maxEpoch = (int)Math.Floor(maxEpochF);
-            float last = maxEpochF - (float)maxEpoch;
-            int maxCount = Math.Min(node.points.Count, maxEpoch);
-
-            if (node.epoch > epoch)
-                break;// continue;
-
-            //assumes root is somewhat ordered, "node =  root[i]" and "parent = root[j]" -> j < i
-            preProcessLength(root, ii, epoch, maxGrowth, growRate);
-
-            MyTreeNode parent = root[node.parentId];
-            node.maxDiameter = Math.Min(parent.maxDiameter, (parent.length - node.startLen) * diamLengthScale);
-
-            float curLen = node.length;
-
-            int vsi = vertices.Count;
-            int tsi = triangles.Count;
-
-            Vector3 curPos = node.startPos;
-
-            Vector3[] surfPoints = FullTransform(shape, orientation, node.points[0], curPos, node.maxDiameter);
-            vertices.AddRange(surfPoints);
-            for (int k = 0; k < numCircPoints; ++k)
-                uv.Add(new Vector2(coords[k], 0.0f));
-
-            int skipped = 0;
-            float dlen = 0.0f;
-
-            int lastChild = -1;
-            for (int j = 0; j < maxCount; ++j)
+            
+            fixed (Vector3* __vertices = &vertices[0])
             {
-                Vector3 p = node.points[j] * (1.0f + (Math.Min(maxEpochF - j, maxGrowth) * growRate));
-                curPos += p;
-                curLen -= p.magnitude;
-
-                dlen += p.magnitude;
-
-                bool haveChild = false;
-                if (node.childrenStartIdx.Count > 0 && j <= node.childrenStartIdx[node.childrenStartIdx.Count - 1])
+                Vector3* _vertices = __vertices;
+                fixed (Vector2* __uv = &uv[0])
                 {
-                    for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
+                    Vector2* _uv = __uv;
+                    fixed (int* __triangles = &triangles[0])
                     {
-                        if (j == node.childrenStartIdx[k])
+                        int* _triangles = __triangles;
+
+                        int ii = 0;
+                        int vsi = 0;
+                        int tsi = 0;
+                        for (; ii < root.Count; ii++)
                         {
-                            lastChild = k;
-                            haveChild = true;
+                            int node_vsi = vsi;
+                            MyTreeNode node = root[ii];
+
+                            float maxEpochF = Math.Max(0.0f, epoch - node.epoch);
+                            int maxEpoch = (int)Math.Floor(maxEpochF);
+                            float last = maxEpochF - (float)maxEpoch;
+                            int maxCount = Math.Min(node.points.Count, maxEpoch);
+
+                            if (node.epoch > epoch)
+                                break;// continue;
+
+                            //assumes root is somewhat ordered, "node =  root[i]" and "parent = root[j]" -> j < i
+                            preProcessLength(root, ii, epoch, maxGrowth, growRate);
+
+                            MyTreeNode parent = root[node.parentId];
+                            int pId1 = (int)Math.Min(Math.Max(0, epoch - parent.epoch), parent.points.Count-1);
+                            int pId2 = (int)Math.Min(pId1+1, parent.points.Count-1);
+                            float parentLen = (1.0f - last) * parent.length[pId1] + last * parent.length[pId2];
+                            node.maxDiameter = Math.Min(parent.maxDiameter, (parentLen - node.startLen) * diamLengthScale);
+
+
+                            pId1 = maxCount - 1;
+                            pId2 = (int)Math.Min(pId1 + 1, node.points.Count - 1);
+                            float nodeLen = (1.0f - last) * node.length[pId1] + last * node.length[pId2];
+                            float curLen = nodeLen;
+
+                            Vector3 curPos = node.startPos;
+
+                            FullTransform(shape, _vertices, vsi, orientation, node.points[0], curPos, node.maxDiameter);
+                            for (int k = 0; k < numCircPoints; ++k) { 
+                                uv[vsi + k].x = coords[k]; uv[vsi + k].y = 0.0f;
+                            }
+                            vsi += numCircPoints;
+
+                            int skipped = 0;
+                            float dlen = 0.0f;
+
+                            int lastChild = -1;
+                            for (int j = 0; j < maxCount; ++j)
+                            {
+                                Vector3 p = node.points[j];// * (1.0f + (Math.Min(maxEpochF - j, maxGrowth) * growRate));
+                                curPos += p;
+                                curLen = nodeLen - node.length[j];
+
+                                dlen += p.magnitude;
+
+                                bool haveChild = false;
+                                if (node.childrenStartIdx.Count > 0 && j <= node.childrenStartIdx[node.childrenStartIdx.Count - 1])
+                                {
+                                    for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
+                                    {
+                                        if (j == node.childrenStartIdx[k])
+                                        {
+                                            lastChild = k;
+                                            haveChild = true;
+                                        }
+                                    }
+                                }
+
+                                if (dlen < LOD && j != maxCount - 1 && !haveChild)
+                                {
+                                    skipped += 1;
+                                    continue;
+                                }
+                                else
+                                {
+                                    dlen = 0.0f;
+
+                                    float maxDiam = Math.Min(node.maxDiameter, diamLengthScale * curLen);
+                                    FullTransform(shape, _vertices, vsi, orientation, node.points[j], curPos, maxDiam);
+                                    float circLen = (float)(2.0f * Math.PI * maxDiam);
+                                    for (int k = 0; k < numCircPoints; k++)
+                                    {
+                                        uv[vsi + k].x = coords[k]; uv[vsi + k].y = texScale * (nodeLen - curLen) / circLen;
+                                    }
+                                    vsi += numCircPoints;
+                                }
+                            }
+
+                            maxCount -= skipped;
+                            for (int j = 0; j < maxCount; ++j)
+                            {
+                                for (int k = 0; k < numCircPoints - 1; ++k)
+                                {
+                                    _triangles[tsi + k + 0] = node_vsi + (k) + (j) * numCircPoints;
+                                    _triangles[tsi + k + 1] = node_vsi + (k + 1) + (j) * numCircPoints;
+                                    _triangles[tsi + k + 2] = node_vsi + (k + 1) + (j + 1) * numCircPoints;
+                                    _triangles[tsi + k + 3] = node_vsi + (k) + (j) * numCircPoints;
+                                    _triangles[tsi + k + 4] = node_vsi + (k + 1) + (j + 1) * numCircPoints;
+                                    _triangles[tsi + k + 5] = node_vsi + (k) + (j + 1) * numCircPoints;
+                                    tsi += 6;
+                                }
+
+                                _triangles[tsi + 0] = node_vsi + (numCircPoints - 1) + (j) * numCircPoints;
+                                _triangles[tsi + 1] = node_vsi + (j) * numCircPoints;
+                                _triangles[tsi + 2] = node_vsi + (j + 1) * numCircPoints;
+                                _triangles[tsi + 3] = node_vsi + (numCircPoints - 1) + (j) * numCircPoints;
+                                _triangles[tsi + 4] = node_vsi + +(j + 1) * numCircPoints;
+                                _triangles[tsi + 5] = node_vsi + (numCircPoints - 1) + (j + 1) * numCircPoints;
+                                tsi += 6;
+                            }
+
+                            if (maxCount < node.points.Count)
+                            {
+                                _vertices[vsi]=curPos + node.points[maxCount] * last;
+                                _uv[vsi].x = 0.5f; _uv[vsi].y = nodeLen;
+                                int lastPoint = vsi;
+                                vsi++;
+
+                                for (int k = 0; k < numCircPoints - 1; ++k)
+                                {
+                                    _triangles[tsi + 0] = node_vsi + (k + 1) + maxCount * numCircPoints;
+                                    _triangles[tsi + 1] = node_vsi + (k) + maxCount * numCircPoints;
+                                    _triangles[tsi + 2] = lastPoint;
+                                    tsi += 3;
+                                }
+                                _triangles[tsi + 0] = node_vsi + maxCount * numCircPoints;
+                                _triangles[tsi + 1] = node_vsi + (numCircPoints - 1) + maxCount * numCircPoints;
+                                _triangles[tsi + 2] = lastPoint;
+                                tsi += 3;
+                            }
                         }
+                        VCount = vsi;
+                        TCount = tsi;
                     }
                 }
-
-                if (dlen < LOD && j != maxCount - 1 && !haveChild)
-                {
-                    skipped += 1;
-                    continue;
-                }
-                else
-                {
-                    dlen = 0.0f;
-
-                    float maxDiam = Math.Min(node.maxDiameter, diamLengthScale * curLen);
-                    surfPoints = FullTransform(shape, orientation, node.points[j], curPos, maxDiam);
-                    float circLen = (float)(2.0f * Math.PI * maxDiam);
-                    vertices.AddRange(surfPoints);
-                    for (int k = 0; k < numCircPoints; ++k)
-                        uv.Add(new Vector2(coords[k], texScale * (node.length - curLen) / circLen));
-                }
-            }
-
-            maxCount -= skipped;
-            for (int j = 0; j < maxCount; ++j)
-            {
-                for (int k = 0; k < numCircPoints - 1; ++k)
-                {
-                    int[] ta = { vsi + (k    ) + (j    ) * numCircPoints,
-                                 vsi + (k + 1) + (j    ) * numCircPoints,
-                                 vsi + (k + 1) + (j + 1) * numCircPoints};
-                    int[] tb = { vsi + (k    ) + (j    ) * numCircPoints,
-                                 vsi + (k + 1) + (j + 1) * numCircPoints,
-                                 vsi + (k    ) + (j + 1) * numCircPoints };
-                    triangles.AddRange(ta);
-                    triangles.AddRange(tb);
-                }
-                int[] tta = { vsi + (numCircPoints - 1) + (j    ) * numCircPoints,
-                              vsi +                       (j    ) * numCircPoints,
-                              vsi +                       (j + 1) * numCircPoints};
-                int[] ttb = { vsi + (numCircPoints - 1) + (j    ) * numCircPoints,
-                              vsi +                     + (j + 1) * numCircPoints,
-                              vsi + (numCircPoints - 1) + (j + 1) * numCircPoints };
-                triangles.AddRange(tta);
-                triangles.AddRange(ttb);
-            }
-
-            if (maxCount < node.points.Count)
-            {
-                vertices.Add(curPos + node.points[maxCount] * last);
-                uv.Add(new Vector2(0.5f, node.length));
-                int lastPoint = vertices.Count - 1;
-                for (int k = 0; k < numCircPoints - 1; ++k)
-                {
-                    int[] ta = { vsi + (k + 1) + maxCount * numCircPoints,
-                                 vsi + (k    ) + maxCount * numCircPoints,
-                                 lastPoint };
-                    triangles.AddRange(ta);
-                }
-                int[] ttta = { vsi +                       maxCount * numCircPoints,
-                               vsi + (numCircPoints - 1) + maxCount * numCircPoints,
-                               lastPoint };
-                triangles.AddRange(ttta);
             }
         }
-        return ii;
     }
 
     public static void fillVerticesTrianglesGeomShader(Vector3[] vertices,
@@ -254,9 +281,16 @@ public class FillMeshData {
                             preProcessLength(root, ii, epoch, maxGrowth, growRate);
 
                             MyTreeNode parent = root[node.parentId];
-                            node.maxDiameter = Math.Min(parent.maxDiameter, (parent.length - node.startLen) * diamLengthScale);
+                            int pId1 = (int)Math.Min(Math.Max(0, epoch - parent.epoch), parent.points.Count - 1);
+                            int pId2 = (int)Math.Min(pId1 + 1, parent.points.Count - 1);
+                            float parentLen = (1.0f - last) * parent.length[pId1] + last * parent.length[pId2];
+                            node.maxDiameter = Math.Min(parent.maxDiameter, (parentLen - node.startLen) * diamLengthScale);
 
-                            float curLen = node.length;
+
+                            pId1 = maxCount - 1;
+                            pId2 = (int)Math.Min(pId1 + 1, node.points.Count - 1);
+                            float nodeLen = (1.0f - last) * node.length[pId1] + last * node.length[pId2];
+                            float curLen = nodeLen;
 
                             Vector3 curPos = node.startPos;
 
@@ -275,7 +309,7 @@ public class FillMeshData {
                             {
                                 Vector3 p = node.points[j] * (1.0f + (Math.Min(maxEpochF - j, maxGrowth) * growRate));
                                 curPos += p;
-                                curLen -= p.magnitude;
+                                curLen = nodeLen - node.length[j];
 
                                 dlen += p.magnitude;
 
@@ -307,7 +341,7 @@ public class FillMeshData {
                                     //store current root point position to processed in the shader: point -> circle
                                     _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
                                     //store current point diameter and vertical texture position
-                                    _uv->x = maxDiam; _uv->y = texScale * (node.length - curLen) / circLen;
+                                    _uv->x = maxDiam; _uv->y = texScale * (nodeLen - curLen) / circLen;
                                     _vertices += 1;
                                     _uv += 1;
                                     vsi++;
@@ -331,7 +365,7 @@ public class FillMeshData {
                             {
                                 curPos = curPos + node.points[maxCount] * last;
                                 _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
-                                _uv->x = 0.0001f; _uv->y = node.length;
+                                _uv->x = 0.0001f; _uv->y = nodeLen;
                                 _vertices += 1;
                                 _uv += 1;
                                 vsi++;
@@ -351,7 +385,7 @@ public class FillMeshData {
                             //Dummy vertex, in case there are not enough vertices to make a triangle
                             curPos *= 1.001f;
                             _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
-                            _uv->x = 0.0001f; _uv->y = node.length;
+                            _uv->x = 0.0001f; _uv->y = nodeLen;
                             _vertices += 1;
                             _uv += 1;
                             vsi++;

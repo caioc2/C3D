@@ -6,67 +6,135 @@ using System.Threading;
 
 public class SetupMeshMulti {
 
-    private List<Vector3>[] vertices;
-    private List<Vector2>[] uv;
-    private List<int>[] triangles;
-    int[] count;
+    private List<Vector3[]> vertices;
+    private List<Vector2[]> uv;
+    private List<int[]> triangles;
+    private volatile List<int> toProcess;
+    private volatile List<int> toSetup;
+    int[] VCount;
+    int[] TCount;
     int[] maxTime;
+    private readonly bool _threaded;
 
-    public SetupMeshMulti()
+    //thread data
+    Thread[] td;
+    private List<MyTreeNode>[] _root;
+    private Vector3[] _shape;
+    private float[] _coords;
+    private float _curTime;
+    private float _maxGrowth;
+    private float _growRate;
+    private float _diamLengthScale;
+    private float _texScale;
+    private float _LOD;
+    private int _numCircPoints;
+    public int waitTime = 1;//8ms
+    private volatile bool isRunning = true;
+
+    public SetupMeshMulti(bool threaded)
     {
-        
+        _threaded = threaded;
+        toProcess = new List<int>();
+        toSetup = new List<int>();
+        if (threaded)
+        {
+            int nt = Math.Max(1, Environment.ProcessorCount);
+            td = new Thread[nt];
+            for (int i = 0; i < nt; i++)
+            {
+                td[i] = new Thread(() =>
+                {
+                    ref float curTime = ref _curTime;
+                    ref float maxGrowth = ref _maxGrowth;
+                    ref float growRate = ref _growRate;
+                    ref float diamLengthScale = ref _diamLengthScale;
+                    ref float texScale = ref _texScale;
+                    ref float LOD = ref _LOD;
+                    ref int numCircPoints = ref _numCircPoints;
+                    ref bool run = ref isRunning;
+                    while (run)
+                    {
+                        int idx = -1;
+                        lock (toProcess)
+                        {
+                            if (toProcess.Count > 0)
+                            {
+                                idx = toProcess[0];
+                                toProcess.RemoveAt(0);
+                            }
+                        }
+                        if (idx == -1)
+                        {
+                            Thread.Sleep(waitTime);
+                        }
+                        else
+                        {
+                            FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], _root[idx], curTime,
+                                                    maxGrowth,
+                                                    growRate,
+                                                    diamLengthScale,
+                                                    _shape,
+                                                    _coords,
+                                                    texScale,
+                                                    LOD,
+                                                    out VCount[idx],
+                                                    out TCount[idx]);
+                            lock (toSetup)
+                            {
+                                toSetup.Add(idx);
+                            }
+                        }
+                    }
+                });
+                td[i].Start();
+            }
+        }
     }
 
     public void allocVecs(int numTrees)
     {
-        vertices = new List<Vector3>[numTrees];
-        uv = new List<Vector2>[numTrees];
-        triangles = new List<int>[numTrees];
-        count = new int[numTrees];
+        vertices = new List<Vector3[]>();
+        uv = new List<Vector2[]>();
+        triangles = new List<int[]>();
+        VCount = new int[numTrees];
+        TCount = new int[numTrees];
         maxTime = new int[numTrees];
-        for (int i = 0; i < numTrees; ++i)
-        {
-            vertices[i] = new List<Vector3>();
-            uv[i] = new List<Vector2>();
-            triangles[i] = new List<int>();
-        }
     }
 
 
     public void setCapacity(List<MyTreeNode>[] root,
                             int numCircPoints)
     {
-        long ntri = 0;
+        uv.Clear();
+        vertices.Clear();
+        triangles.Clear();
         for (int i = 0; i < root.Length; ++i)
         {
             maxTime[i] = root[i][root[i].Count - 1].epoch + root[i][root[i].Count - 1].points.Count + 1;
             int numVertices = 0;
             for (int j = 0; j < root[i].Count; ++j)
             {
-                numVertices += root[i][j].points.Count;
+                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 1 : 3;
             }
-            vertices[i] = new List<Vector3>();
-            uv[i] = new List<Vector2>();
-            triangles[i] = new List<int>();
 
-            uv[i].Capacity = numVertices * numCircPoints - root[i].Count * (numCircPoints - 1);
-            vertices[i].Capacity = numVertices * numCircPoints - root[i].Count * (numCircPoints - 1);
-            triangles[i].Capacity = 3 * 2 * (numVertices * numCircPoints);
-            ntri += 2 * (numVertices * numCircPoints);
+            uv.Add(new Vector2[(1+numVertices) * numCircPoints]);
+            vertices.Add(new Vector3[(1+numVertices) * numCircPoints]);
+            triangles.Add(new int[3 * 2 * ((1+numVertices) * numCircPoints)]);
         }
     }
 
-    void setupMesh(Mesh mesh, ParticleSystem ps, List<Vector3> v, List<Vector2> uv, List<int> tri)
+    void setupMesh(Mesh mesh, ParticleSystem ps, Vector3[] v, Vector2[] uv, int[] tri, int VCount, int TCount)
     {
         mesh.Clear();
-        mesh.SetVertices(v);
-        mesh.SetTriangles(tri, 0);
-        mesh.SetUVs(0, uv);
+        
+        mesh.SetVertices(v, 0, VCount);
+        mesh.SetTriangles(tri, 0, TCount, 0);
+        mesh.SetUVs(0, uv, 0, VCount);
 
-        mesh.RecalculateNormals();
         mesh.RecalculateBounds();
 
-        if (ps != null) { 
+        if (ps != null)
+        {
             var sh = (ps.GetComponent<ParticleSystem>()).shape;
             sh.enabled = true;
             sh.shapeType = ParticleSystemShapeType.Mesh;
@@ -81,7 +149,6 @@ public class SetupMeshMulti {
         var em = ps.emission;
         if (isNight && count > 0)
         {
-            //Debug.Log("rate : " + count + "/" + maxCount);
             em.rateOverTime = 2.0f * (float)count / (float)maxCount;
         }
         else
@@ -90,32 +157,8 @@ public class SetupMeshMulti {
         }
     }
 
-    int processMesh(List<MyTreeNode> root, float time, int i, 
-                                             float maxGrowth,
-                                             float growRate,
-                                             float diamLengthScale,
-                                             int numCircPoints,
-                                             Vector3[] shape,
-                                             float[] coords,
-                                             float texScale,
-                                             float LOD)
-    {
-        vertices[i].Clear();
-        triangles[i].Clear();
-        uv[i].Clear();
-        int ret = FillMeshData.fillVerticesTriangles(vertices[i], triangles[i], uv[i], root, time, 
-                                                    maxGrowth,
-                                                    growRate,
-                                                    diamLengthScale,
-                                                    numCircPoints,
-                                                    shape,
-                                                    coords,
-                                                    texScale,
-                                                    LOD);
-        return ret;
-    }
 
-    public bool update(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
+    public bool updateMulti(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
                        float maxGrowth,
                        float growRate,
                        float diamLengthScale,
@@ -126,50 +169,46 @@ public class SetupMeshMulti {
                        float LOD,
                        bool forceUpdate)
     {
-        List<int> toProcess = new List<int>();
-        for (int i = 0; i < root.Length; ++i)
+        if (toProcess.Count == 0)
         {
-            if (root == null || root[i] == null) continue;
-
-            count[i] = root[i].Count;
-            if (last_t < maxTime[i] || forceUpdate)
+            lock (toProcess)
             {
-                toProcess.Add(i);
+                for (int i = 0; i < root.Length; ++i)
+                {
+                    if (root == null || root[i] == null) continue;
+
+                    if (last_t < maxTime[i] || forceUpdate)
+                    {
+                        toProcess.Add(i);
+                    }
+                }
+                _root = root;
+                _curTime = t;
+                _maxGrowth = maxGrowth;
+                _growRate = growRate;
+                _diamLengthScale = diamLengthScale;
+                _texScale = texScale;
+                _LOD = LOD;
+                _shape = shape;
+                _coords = coords;
             }
         }
 
-        int nt = Math.Max(1, Environment.ProcessorCount);
-        Thread[] td = new Thread[nt];
-        for (int i = 0; i < nt; i++)
+
+        if (toSetup.Count > 0)
         {
-            int startIdx = i;
-            td[i] = new Thread(() => {
-                float curTime = t;
-                for (int j = startIdx; j < toProcess.Count; j += nt)
-                { 
-                    int idx = toProcess[j];
-                    count[idx] = processMesh(root[idx], curTime, idx, 
-                                             maxGrowth,
-                                             growRate,
-                                             diamLengthScale,
-                                             numCircPoints,
-                                             shape,
-                                             coords,
-                                             texScale,
-                                             LOD);
+            lock (toSetup)
+            {
+                Debug.Log("vert " + vertices[0].Length + " " + VCount[0]);
+                Debug.Log("tri " + triangles[0].Length + " " + TCount[0]);
+                for (int i = 0; i < toSetup.Count; ++i)
+                {
+                    int idx = toSetup[i];
+                    //setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
+                    //setMeshParticles(comp[idx].ps, isNight, VCount[idx], root[idx].Count);
                 }
-            });
-            td[i].Start();
-        }
-
-        for (int i = 0; i < td.Length; ++i)
-            td[i].Join();
-
-        for (int i = 0; i < toProcess.Count; ++i)
-        {
-            int idx = toProcess[i];
-            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(), vertices[idx], uv[idx], triangles[idx]);
-            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], root[idx].Count);
+                toSetup.Clear();
+            }
         }
 
         return toProcess.Count > 0;
@@ -186,12 +225,11 @@ public class SetupMeshMulti {
                        float LOD,
                        bool forceUpdate)
     {
-        List<int> toProcess = new List<int>();
+        toProcess.Clear();
         for (int i = 0; i < root.Length; ++i)
         {
             if (root == null || root[i] == null) continue;
-
-            count[i] = root[i].Count;
+            
             if (last_t < maxTime[i] || forceUpdate)
             {
                 toProcess.Add(i);
@@ -202,24 +240,64 @@ public class SetupMeshMulti {
         for (int j = 0; j < toProcess.Count; ++j)
         {
             int idx = toProcess[j];
-            count[idx] = processMesh(root[idx], curTime, idx,
-                                        maxGrowth,
-                                        growRate,
-                                        diamLengthScale,
-                                        numCircPoints,
-                                        shape,
-                                        coords,
-                                        texScale,
-                                        LOD);
+            FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], root[idx], curTime,
+                                                    maxGrowth,
+                                                    growRate,
+                                                    diamLengthScale,
+                                                    shape,
+                                                    coords,
+                                                    texScale,
+                                                    LOD,
+                                                    out VCount[idx],
+                                                    out TCount[idx]);
+            setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
+            setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
         }
-
-        for (int i = 0; i < toProcess.Count; ++i)
-        {
-            int idx = toProcess[i];
-            setupMesh((comp[idx].GetComponent<MeshFilter>()).sharedMesh, comp[idx].GetComponent<ParticleSystem>(), vertices[idx], uv[idx], triangles[idx]);
-            setMeshParticles(comp[idx].GetComponent<ParticleSystem>(), isNight, count[idx], root[idx].Count);
-        }
-
         return toProcess.Count > 0;
+    }
+
+    public bool update(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
+                       float maxGrowth,
+                       float growRate,
+                       float diamLengthScale,
+                       int numCircPoints,
+                       Vector3[] shape,
+                       float[] coords,
+                       float texScale,
+                       float LOD,
+                       bool forceUpdate)
+    {
+        if (_threaded)
+        {
+            return updateMulti(root, comp, t, last_t, isNight,
+                       maxGrowth,
+                       growRate,
+                       diamLengthScale,
+                       numCircPoints,
+                       shape,
+                       coords,
+                       texScale,
+                       LOD,
+                       forceUpdate);
+        }
+        else
+        {
+            return updateSingle(root, comp, t, last_t, isNight,
+                       maxGrowth,
+                       growRate,
+                       diamLengthScale,
+                       numCircPoints,
+                       shape,
+                       coords,
+                       texScale,
+                       LOD,
+                       forceUpdate);
+        }
+    }
+
+    ~SetupMeshMulti()
+    {
+        isRunning = false;
+        for (int i = 0; i < td.Length; ++i) td[i].Join();
     }
 }

@@ -1,4 +1,4 @@
-﻿#define USE_MULTI_THREAD
+﻿//#define USE_MULTI_THREAD
 #define USE_GEOM_SHADER
 using System.Collections;
 using System.Collections.Generic;
@@ -40,12 +40,13 @@ public class root_of_shame : MonoBehaviour {
     public float LeftRightRate     = 0.5f;
     [Range(0.0f, 0.5f)]
     public float diamLengthScale   = 0.02f;
-    [Range(0.0f, 0.01f)]
-    public float growRate          = 0.001f;
+    //Disabled
+    //[Range(0.0f, 0.01f)]
+    private float growRate          = 0.001f;
     [Space(5)]
     [Header("Tree nodes settings")]
-    [Range(0, 500)]
-    public int maxGrowth           = 100;
+    //[Range(0, 500)]
+    private int maxGrowth           = 100;
     [Range(0, 20)]
     public int maxLevel            = 10;
     [Range(0, 100)]
@@ -83,6 +84,9 @@ public class root_of_shame : MonoBehaviour {
     public Material geomMat;
     [Header("Force update every frame (benchmark)")]
     public  bool forceUpdate = false;
+    [Header("Thread wait time")]
+    [Range(1, 100)]
+    public int wait = 8;
 
     private DayNightCycle dnc;
 
@@ -91,6 +95,8 @@ public class root_of_shame : MonoBehaviour {
 
     private List<MyTreeNode>[] root;
     private root_component[] comp;
+    private Mesh[] mesh;
+    private ParticleSystem[] ps;
     
     float t = 0.0f;
 
@@ -109,11 +115,11 @@ public class root_of_shame : MonoBehaviour {
 
     bool updateMesh(float t, float last_t)
     {
-#if USE_MULTI_THREAD
         return mt.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD, forceUpdate);
-#else
-        return mt.updateSingle(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD, forceUpdate);
-#endif
+    }
+    void setWait(int wait)
+    {
+        mt.waitTime = wait;
     }
 #else
     SetupMeshGeomShader gs;
@@ -129,22 +135,30 @@ public class root_of_shame : MonoBehaviour {
 
     bool updateMesh(float t, float last_t)
     {
-#if USE_MULTI_THREAD
-        return gs.update(root,  comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD, forceUpdate);
-#else
-        return gs.updateSingle(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD, forceUpdate);
-#endif
+        return gs.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD, forceUpdate);
+    }
+
+    void setWait(int wait)
+    {
+        gs.waitTime = wait;
     }
 #endif
-
     void Awake()
     {
 
 #if !USE_GEOM_SHADER
-        mt = new SetupMeshMulti();
+#if USE_MULTI_THREAD
+        mt =  new SetupMeshMulti(true);
+#else
+        mt =  new SetupMeshMulti(false);
+#endif
         Material mat = defMat;
 #else
-        gs =  new SetupMeshGeomShader();
+#if USE_MULTI_THREAD
+        gs =  new SetupMeshGeomShader(true);
+#else
+        gs =  new SetupMeshGeomShader(false);
+#endif
         Material mat = geomMat;
 #endif
         comp = (root_component[])transform.GetComponentsInChildren<root_component>();
@@ -228,6 +242,7 @@ public class root_of_shame : MonoBehaviour {
     bool once = true;
     void Update()
     {
+        setWait(wait);
         float LocalSpeed = speed;
         if (Input.GetKeyUp(KeyCode.Space))
         {

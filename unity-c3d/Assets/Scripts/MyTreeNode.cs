@@ -10,23 +10,24 @@ public class MyTreeNode
     public int parentChildId;           //index in the parent child array
     public int level;                   //hierarchy level
     public int epoch;                   //epoch this branch started
-    public float length;                //total length of current drawn branch
+    //public float length;                //total length of current drawn branch
     public float maxDiameter;           //max diameter of current drawn branch
     public List<int> childrenId;        //index of children in the node array
     public List<int> childrenStartIdx;  //index of "points" where each child starts
     public float startLen;              //length of where each child starts
     public List<Vector3> points;        //points of the branch
+    public List<float> length;
     public Vector3 startPos;
 
-    public MyTreeNode(int _id, int _parentId, int _level, int _epoch, int _parentChildId)
+    public MyTreeNode(int _id, int _parentId, int _level, int _epoch, int _parentChildId, float _startLen)
     {
         id = _id;
         parentId = _parentId;
         level = _level;
         epoch = _epoch;
         parentChildId = _parentChildId;
-        length = 0.0f;
-        startLen = 0.0f;
+        length = new List<float>();
+        startLen = _startLen;
         maxDiameter = float.MaxValue;
         childrenId = new List<int>();
         childrenStartIdx = new List<int>();
@@ -40,7 +41,7 @@ public class MyTreeNode
         level = 0;
         epoch = 0;
         parentChildId = -1;
-        length = 0.0f;
+        length = new List<float>();
         startLen = 0.0f;
         maxDiameter = float.MaxValue;
         childrenId = new List<int>();
@@ -51,5 +52,7 @@ public class MyTreeNode
     public void addPoint(Vector3 p)
     {
         points.Add(p);
+        float lastl = length.Count > 0 ? length[length.Count - 1] : 0.0f;
+        length.Add(lastl + p.magnitude);
     }
 };

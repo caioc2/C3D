@@ -7,7 +7,7 @@ public class MyRandom
 
     private MyRandom()
     {
-        r = new System.Random();
+        r = new System.Random(1);
     }
 
     public static MyRandom getInstance()
