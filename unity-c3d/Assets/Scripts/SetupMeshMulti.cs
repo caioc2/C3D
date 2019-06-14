@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -237,9 +238,9 @@ public class SetupMeshMulti {
         }
 
         float curTime = t;
-        for (int j = 0; j < toProcess.Count; ++j)
+        Parallel.For(0, toProcess.Count, (i) =>
         {
-            int idx = toProcess[j];
+            int idx = toProcess[i];
             FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], root[idx], curTime,
                                                     maxGrowth,
                                                     growRate,
@@ -250,6 +251,13 @@ public class SetupMeshMulti {
                                                     LOD,
                                                     out VCount[idx],
                                                     out TCount[idx]);
+            setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
+            setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
+        });
+
+        for (int j = 0; j < toProcess.Count; ++j)
+        {
+            int idx = toProcess[j];
             setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
             setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
         }

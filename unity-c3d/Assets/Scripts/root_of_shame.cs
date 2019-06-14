@@ -276,4 +276,9 @@ public class root_of_shame : MonoBehaviour {
             frameCount++;
         }
     }
+
+    private void OnDestroy()
+    {
+        gs.OnDestroy();
+    }
 }

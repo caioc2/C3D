@@ -135,10 +135,10 @@ float3x3 rotationMatrix(float3 b)
 	};
 
 	vm = id + vm + mul(vm, vm) / (1 + c + eps);
-	return vm;// mul(vm, vm);
+	return vm;
 }
 
-#define nc (10)
+#define nc (6)
 #define PI (3.14159265f)
 
 

@@ -119,13 +119,15 @@ public class FillMeshData {
                                 break;// continue;
 
                             //assumes root is somewhat ordered, "node =  root[i]" and "parent = root[j]" -> j < i
-                            preProcessLength(root, ii, epoch, maxGrowth, growRate);
+                            //preProcessLength(root, ii, epoch, maxGrowth, growRate);
 
                             MyTreeNode parent = root[node.parentId];
                             int pId1 = (int)Math.Min(Math.Max(0, epoch - parent.epoch), parent.points.Count-1);
                             int pId2 = (int)Math.Min(pId1+1, parent.points.Count-1);
                             float parentLen = (1.0f - last) * parent.length[pId1] + last * parent.length[pId2];
-                            node.maxDiameter = Math.Min(parent.maxDiameter, (parentLen - node.startLen) * diamLengthScale);
+
+                            float parentMaxDiam = node.parentId == ii ? float.MaxValue: parent.maxDiameter;
+                            node.maxDiameter = Math.Min(parentMaxDiam, (parentLen - node.startLen) * diamLengthScale);
 
 
                             pId1 = maxCount - 1;
@@ -147,7 +149,7 @@ public class FillMeshData {
                             int lastChild = -1;
                             for (int j = 0; j < maxCount; ++j)
                             {
-                                Vector3 p = node.points[j];// * (1.0f + (Math.Min(maxEpochF - j, maxGrowth) * growRate));
+                                Vector3 p = node.points[j];
                                 curPos += p;
                                 curLen = nodeLen - node.length[j];
 
@@ -180,7 +182,7 @@ public class FillMeshData {
                                     float circLen = (float)(2.0f * Math.PI * maxDiam);
                                     for (int k = 0; k < numCircPoints; k++)
                                     {
-                                        uv[vsi + k].x = coords[k]; uv[vsi + k].y = texScale * (nodeLen - curLen) / circLen;
+                                        uv[vsi + k].x = coords[k]; uv[vsi + k].y = texScale * node.length[j];// / circLen;
                                     }
                                     vsi += numCircPoints;
                                 }
@@ -237,6 +239,14 @@ public class FillMeshData {
         }
     }
 
+    private static int mini(int a, int b) => ((a > b) ? b : a);
+
+    private static float minf(float a, float b) => ((a > b) ? b : a);
+
+    private static int maxi(int a, int b) => ((a < b) ? b : a);
+
+    private static float maxf(float a, float b) => ((a < b) ? b : a);
+
     public static void fillVerticesTrianglesGeomShader(Vector3[] vertices,
                                              int[] triangles,
                                              Vector2[] uv,
@@ -269,28 +279,27 @@ public class FillMeshData {
                         {
                             MyTreeNode node = root[ii];
 
-                            float maxEpochF = Math.Max(0.0f, epoch - node.epoch);
-                            int maxEpoch = (int)Math.Floor(maxEpochF);
+                            float maxEpochF = maxf(0.0f, epoch - node.epoch);
+                            int maxEpoch = (int)(maxEpochF);
                             float last = maxEpochF - (float)maxEpoch;
-                            int maxCount = Math.Min(node.points.Count, maxEpoch);
+                            int maxCount = mini(node.points.Count, maxEpoch);
 
                             if (node.epoch > epoch)
                                 break;// continue;
 
-                            //assumes root is somewhat ordered, "node =  root[i]" and "parent = root[j]" -> j < i
-                            preProcessLength(root, ii, epoch, maxGrowth, growRate);
-
                             MyTreeNode parent = root[node.parentId];
-                            int pId1 = (int)Math.Min(Math.Max(0, epoch - parent.epoch), parent.points.Count - 1);
-                            int pId2 = (int)Math.Min(pId1 + 1, parent.points.Count - 1);
+                            int pId1 = mini(maxi(0, (int)epoch - parent.epoch), parent.points.Count - 1);
+                            int pId2 = mini(pId1 + 1, parent.points.Count - 1);
                             float parentLen = (1.0f - last) * parent.length[pId1] + last * parent.length[pId2];
-                            node.maxDiameter = Math.Min(parent.maxDiameter, (parentLen - node.startLen) * diamLengthScale);
+                            float parentMaxDiam = node.parentId == ii ? float.MaxValue : parent.maxDiameter;
+                            node.maxDiameter = minf(parentMaxDiam, (parentLen - node.startLen) * diamLengthScale);
 
 
-                            pId1 = maxCount - 1;
-                            pId2 = (int)Math.Min(pId1 + 1, node.points.Count - 1);
+                            pId1 = maxi(0, maxCount - 1);
+                            pId2 = maxi(0, mini(pId1 + 1, node.points.Count - 1));
                             float nodeLen = (1.0f - last) * node.length[pId1] + last * node.length[pId2];
                             float curLen = nodeLen;
+                            float lastLen = 0;
 
                             Vector3 curPos = node.startPos;
 
@@ -307,11 +316,12 @@ public class FillMeshData {
                             int lastChild = -1;
                             for (int j = 0; j < maxCount; ++j)
                             {
-                                Vector3 p = node.points[j] * (1.0f + (Math.Min(maxEpochF - j, maxGrowth) * growRate));
-                                curPos += p;
-                                curLen = nodeLen - node.length[j];
+                                float nodeLenJ = node.length[j];
+                                Vector3 pos = node.points[j];
+                                curPos.x += pos.x; curPos.y += pos.y; curPos.z += pos.z;
+                                curLen = nodeLen - nodeLenJ;
 
-                                dlen += p.magnitude;
+                                dlen = nodeLenJ - lastLen;
 
                                 bool haveChild = false;
                                 if (node.childrenStartIdx.Count > 0 && j <= node.childrenStartIdx[node.childrenStartIdx.Count - 1])
@@ -335,17 +345,18 @@ public class FillMeshData {
                                 {
                                     dlen = 0.0f;
 
-                                    float maxDiam = Math.Min(node.maxDiameter, diamLengthScale * curLen);
-                                    float circLen = (float)(2.0f * Math.PI * maxDiam);
+                                    float maxDiam = minf(node.maxDiameter, diamLengthScale * curLen);
+                                    float circLen = (2.0f * Mathf.PI * maxDiam);
 
                                     //store current root point position to processed in the shader: point -> circle
                                     _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
                                     //store current point diameter and vertical texture position
-                                    _uv->x = maxDiam; _uv->y = texScale * (nodeLen - curLen) / circLen;
+                                    _uv->x = maxDiam; _uv->y = texScale * nodeLenJ;// / circLen;
                                     _vertices += 1;
                                     _uv += 1;
                                     vsi++;
                                 }
+                                lastLen = node.length[j];
                             }
 
                             maxCount -= skipped;
@@ -363,8 +374,11 @@ public class FillMeshData {
 
                             if (maxCount < node.points.Count)
                             {
-                                curPos = curPos + node.points[maxCount] * last;
-                                _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
+                                Vector3 pos = node.points[maxCount];
+                                curPos.x += pos.x * last; curPos.y += pos.y * last; curPos.z += pos.z * last;
+                                _vertices->x = curPos.x;
+                                _vertices->y = curPos.y;
+                                _vertices->z = curPos.z;
                                 _uv->x = 0.0001f; _uv->y = nodeLen;
                                 _vertices += 1;
                                 _uv += 1;

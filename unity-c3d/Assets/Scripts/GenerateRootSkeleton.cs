@@ -135,7 +135,28 @@ public class GenerateRootSkeleton {
             }
         }
 
+        processStartPos(rt);
         return rt;
+    }
+
+    private static void processStartPos(List<MyTreeNode> root)
+    {
+        for(int i = 0; i < root.Count; ++i) { 
+            MyTreeNode node = root[i];
+            int lastIdx = 0;
+            Vector3 pos = node.startPos;
+
+            for (int j = 0; j < node.childrenStartIdx.Count; ++j)
+            {
+                for (int k = lastIdx; k < node.childrenStartIdx[j]; ++k)
+                {
+                    Vector3 p = node.points[k];
+                    pos += p;
+                }
+                lastIdx = node.childrenStartIdx[j];
+                root[node.childrenId[j]].startPos = pos;
+            }
+        }
     }
 
 }
