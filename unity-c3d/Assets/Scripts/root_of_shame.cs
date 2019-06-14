@@ -1,5 +1,5 @@
 ﻿//#define USE_MULTI_THREAD
-#define USE_GEOM_SHADER
+//#define USE_GEOM_SHADER
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -84,9 +84,8 @@ public class root_of_shame : MonoBehaviour {
     public Material geomMat;
     [Header("Force update every frame (benchmark)")]
     public  bool forceUpdate = false;
-    [Header("Thread wait time")]
-    [Range(1, 100)]
-    public int wait = 8;
+    [Header("SMT")]
+    public bool smt = true;
 
     private DayNightCycle dnc;
 
@@ -117,10 +116,6 @@ public class root_of_shame : MonoBehaviour {
     {
         return mt.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, numCircPoints, circle, xCoords, texScale, LOD, forceUpdate);
     }
-    void setWait(int wait)
-    {
-        mt.waitTime = wait;
-    }
 #else
     SetupMeshGeomShader gs;
     void allocVecs()
@@ -137,32 +132,27 @@ public class root_of_shame : MonoBehaviour {
     {
         return gs.update(root, comp, t, last_t, (dnc && dnc.isNightTime()), maxGrowth, growRate, diamLengthScale, texScale, LOD, forceUpdate);
     }
-
-    void setWait(int wait)
-    {
-        gs.waitTime = wait;
-    }
 #endif
     void Awake()
     {
-
+        comp = (root_component[])transform.GetComponentsInChildren<root_component>();
+        root = new List<MyTreeNode>[comp.Length];
+        int coreCount = Environment.ProcessorCount / (smt ? 2 : 1);
 #if !USE_GEOM_SHADER
 #if USE_MULTI_THREAD
-        mt =  new SetupMeshMulti(true);
+        mt = new SetupMeshMulti(true, comp.Length, coreCount);
 #else
-        mt =  new SetupMeshMulti(false);
+        mt =  new SetupMeshMulti(false, comp.Length);
 #endif
         Material mat = defMat;
 #else
 #if USE_MULTI_THREAD
-        gs =  new SetupMeshGeomShader(true);
+        gs =  new SetupMeshGeomShader(true, comp.Length, coreCount);
 #else
-        gs =  new SetupMeshGeomShader(false);
+        gs =  new SetupMeshGeomShader(false, comp.Length);
 #endif
         Material mat = geomMat;
 #endif
-        comp = (root_component[])transform.GetComponentsInChildren<root_component>();
-        root = new List<MyTreeNode>[comp.Length];
         for (int i = 0; i < comp.Length; ++i)
         {
             (comp[i].GetComponent<MeshRenderer>()).material = mat;
@@ -187,6 +177,7 @@ public class root_of_shame : MonoBehaviour {
                                                             maxNodes,
                                                             minNodesBChild);
         }
+
         allocVecs();
         setCapacity();
         GameObject go = GameObject.Find("DayNightCycle");
@@ -205,6 +196,7 @@ public class root_of_shame : MonoBehaviour {
             circle[i].z = 0.0f;
             xCoords[i] = (float)i / (float)numCircPoints;
         }
+
     }
 
     void Reset()
@@ -238,11 +230,8 @@ public class root_of_shame : MonoBehaviour {
 
     bool toggle = false;
     float last_t;
-    long frameCount = 0;
-    bool once = true;
     void Update()
     {
-        setWait(wait);
         float LocalSpeed = speed;
         if (Input.GetKeyUp(KeyCode.Space))
         {
@@ -267,18 +256,16 @@ public class root_of_shame : MonoBehaviour {
 
         if (comp == null) return;
 
-        if(!updateMesh(t, last_t) && once)
-        {
-            Debug.Log("Avg Frames: " + frameCount / Time.timeSinceLevelLoad);
-            once = false;
-        } else
-        {
-            frameCount++;
-        }
+        updateMesh(t, last_t);
     }
-
+#if USE_MULTI_THREAD
     private void OnDestroy()
     {
+#if USE_GEOM_SHADER
         gs.OnDestroy();
-    }
+#else
+        mt.OnDestroy();
+#endif
+     }
+#endif
 }

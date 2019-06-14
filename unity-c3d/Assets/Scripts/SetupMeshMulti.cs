@@ -29,17 +29,25 @@ public class SetupMeshMulti {
     private float _texScale;
     private float _LOD;
     private int _numCircPoints;
-    public int waitTime = 1;//8ms
     private volatile bool isRunning = true;
+    private ManualResetEvent _mr;
+    private CountdownEvent _cd;
 
-    public SetupMeshMulti(bool threaded)
+    public SetupMeshMulti(bool threaded, int numObj, int tCount = 1)
     {
         _threaded = threaded;
         toProcess = new List<int>();
         toSetup = new List<int>();
         if (threaded)
         {
-            int nt = Math.Max(1, Environment.ProcessorCount);
+            int nt = Math.Max(1, tCount);
+            _mr = new ManualResetEvent(false);
+            _cd = new CountdownEvent(numObj);
+
+            //Start zeroed
+            for (int i = 0; i < numObj; ++i)
+                _cd.Signal();
+
             td = new Thread[nt];
             for (int i = 0; i < nt; i++)
             {
@@ -66,13 +74,11 @@ public class SetupMeshMulti {
                         }
                         if (idx == -1)
                         {
-                            Thread.Sleep(waitTime);
+                            _mr.WaitOne();
                         }
                         else
                         {
                             FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], _root[idx], curTime,
-                                                    maxGrowth,
-                                                    growRate,
                                                     diamLengthScale,
                                                     _shape,
                                                     _coords,
@@ -83,6 +89,7 @@ public class SetupMeshMulti {
                             lock (toSetup)
                             {
                                 toSetup.Add(idx);
+                                _cd.Signal();
                             }
                         }
                     }
@@ -115,7 +122,7 @@ public class SetupMeshMulti {
             int numVertices = 0;
             for (int j = 0; j < root[i].Count; ++j)
             {
-                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 1 : 3;
+                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 2 : 4;
             }
 
             uv.Add(new Vector2[(1+numVertices) * numCircPoints]);
@@ -132,7 +139,8 @@ public class SetupMeshMulti {
         mesh.SetTriangles(tri, 0, TCount, 0);
         mesh.SetUVs(0, uv, 0, VCount);
 
-        mesh.RecalculateBounds();
+        //Assigning triangles automatically recalculates the bounding volume.
+        //mesh.RecalculateBounds();
 
         if (ps != null)
         {
@@ -158,7 +166,6 @@ public class SetupMeshMulti {
         }
     }
 
-
     public bool updateMulti(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
                        float maxGrowth,
                        float growRate,
@@ -170,46 +177,42 @@ public class SetupMeshMulti {
                        float LOD,
                        bool forceUpdate)
     {
-        if (toProcess.Count == 0)
-        {
-            lock (toProcess)
-            {
-                for (int i = 0; i < root.Length; ++i)
-                {
-                    if (root == null || root[i] == null) continue;
+        _cd.Wait();
+        _cd.Reset();
 
-                    if (last_t < maxTime[i] || forceUpdate)
-                    {
-                        toProcess.Add(i);
-                    }
-                }
-                _root = root;
-                _curTime = t;
-                _maxGrowth = maxGrowth;
-                _growRate = growRate;
-                _diamLengthScale = diamLengthScale;
-                _texScale = texScale;
-                _LOD = LOD;
-                _shape = shape;
-                _coords = coords;
+        _mr.Reset();
+        lock (toSetup)
+        {
+            for (int i = 0; i < toSetup.Count; ++i)
+            {
+                int idx = toSetup[i];
+                setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
+                setMeshParticles(comp[idx].ps, isNight, VCount[idx], root[idx].Count);
             }
+            toSetup.Clear();
         }
 
-
-        if (toSetup.Count > 0)
+        lock (toProcess)
         {
-            lock (toSetup)
+            for (int i = 0; i < root.Length; ++i)
             {
-                Debug.Log("vert " + vertices[0].Length + " " + VCount[0]);
-                Debug.Log("tri " + triangles[0].Length + " " + TCount[0]);
-                for (int i = 0; i < toSetup.Count; ++i)
+                if (root == null || root[i] == null) continue;
+
+                if (last_t < maxTime[i] || forceUpdate)
                 {
-                    int idx = toSetup[i];
-                    //setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
-                    //setMeshParticles(comp[idx].ps, isNight, VCount[idx], root[idx].Count);
+                    toProcess.Add(i);
                 }
-                toSetup.Clear();
             }
+            _root = root;
+            _curTime = t;
+            _maxGrowth = maxGrowth;
+            _growRate = growRate;
+            _diamLengthScale = diamLengthScale;
+            _texScale = texScale;
+            _LOD = LOD;
+            _shape = shape;
+            _coords = coords;
+            _mr.Set();
         }
 
         return toProcess.Count > 0;
@@ -238,12 +241,11 @@ public class SetupMeshMulti {
         }
 
         float curTime = t;
+        UnityEngine.Profiling.Profiler.BeginSample("Data processing");
         Parallel.For(0, toProcess.Count, (i) =>
         {
             int idx = toProcess[i];
             FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], root[idx], curTime,
-                                                    maxGrowth,
-                                                    growRate,
                                                     diamLengthScale,
                                                     shape,
                                                     coords,
@@ -251,16 +253,18 @@ public class SetupMeshMulti {
                                                     LOD,
                                                     out VCount[idx],
                                                     out TCount[idx]);
-            setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
-            setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
         });
+        UnityEngine.Profiling.Profiler.EndSample();
 
+        UnityEngine.Profiling.Profiler.BeginSample("Mesh setup");
+        
         for (int j = 0; j < toProcess.Count; ++j)
         {
             int idx = toProcess[j];
             setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
             setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
         }
+        UnityEngine.Profiling.Profiler.EndSample();
         return toProcess.Count > 0;
     }
 
@@ -303,9 +307,11 @@ public class SetupMeshMulti {
         }
     }
 
-    ~SetupMeshMulti()
+    public void OnDestroy()
     {
         isRunning = false;
         for (int i = 0; i < td.Length; ++i) td[i].Join();
+        _mr.Dispose();
+        _cd.Dispose();
     }
 }

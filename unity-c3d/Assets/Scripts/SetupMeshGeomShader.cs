@@ -27,16 +27,24 @@ public class SetupMeshGeomShader
     private float _diamLengthScale;
     private float _texScale;
     private float _LOD;
-    public int waitTime = 1;
     private volatile bool isRunning = true;
+    private ManualResetEvent _mr;
+    private CountdownEvent _cd;
 
-    public SetupMeshGeomShader(bool threaded)
+    public SetupMeshGeomShader(bool threaded, int numObj, int tCount = 1)
     {
         _threaded = threaded;
         toProcess = new ConcurrentQueue<int>();
         toSetup = new ConcurrentQueue<int>();
         if(threaded) {
-            int nt = Math.Max(1, Environment.ProcessorCount);
+            int nt = Math.Max(1, tCount);
+            _mr = new ManualResetEvent(false);
+            _cd = new CountdownEvent(numObj);
+
+            //Start zeroed
+            for (int i = 0; i < numObj; ++i)
+                _cd.Signal();
+
             td = new Thread[nt];
             for (int i = 0; i < nt; i++)
             {
@@ -49,19 +57,16 @@ public class SetupMeshGeomShader
                     ref float texScale = ref _texScale;
                     ref float LOD = ref _LOD;
                     ref bool run = ref isRunning;
-                    ref int wait = ref waitTime;
                     while (run)
                     {
                         int idx = -1;
                         if (!toProcess.TryDequeue(out idx))
                         {
-                            Thread.Sleep(wait);
+                            _mr.WaitOne();
                         }
                         else
                         {
                             FillMeshData.fillVerticesTrianglesGeomShader(vertices[idx], triangles[idx], uv[idx], _root[idx], curTime,
-                                                    maxGrowth,
-                                                    growRate,
                                                     diamLengthScale,
                                                     texScale,
                                                     LOD,
@@ -69,6 +74,7 @@ public class SetupMeshGeomShader
                                                     out TCount[idx]);
                            
                             toSetup.Enqueue(idx);
+                            _cd.Signal();
                         }
                     }
                 });
@@ -116,11 +122,12 @@ public class SetupMeshGeomShader
         mesh.SetTriangles(tri, 0, TCount, 0);
         mesh.SetUVs(0, uv, 0, VCount);
 
-        mesh.RecalculateBounds();
+        //Assigning triangles automatically recalculates the bounding volume.
+        //mesh.RecalculateBounds();
 
         if (ps != null)
         {
-            var sh = (ps.GetComponent<ParticleSystem>()).shape;
+            var sh = ps.shape;
             sh.enabled = true;
             sh.shapeType = ParticleSystemShapeType.Mesh;
             sh.mesh = mesh;
@@ -151,56 +158,40 @@ public class SetupMeshGeomShader
                        float LOD,
                        bool forceUpdate)
     {
-        a++;
-        if (toProcess.Count == 0)
-        {
-            b++;
-            if (toSetup.Count > 0)
-            {
+        _cd.Wait();
+        _cd.Reset();
 
-                while (toSetup.Count > 0) { 
-                    int idx;
-                    if (toSetup.TryDequeue(out idx))
-                    {
-                        setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
-                        setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
-                    }
-                }
+        _mr.Reset();
+        while (toSetup.Count > 0) { 
+            int idx;
+            if (toSetup.TryDequeue(out idx))
+            {
+                setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
+                setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
             }
+        }
 
             
-                for (int i = 0; i < root.Length; ++i)
-                {
-                    if (root == null || root[i] == null) continue;
-
-                    if (last_t < maxTime[i] || forceUpdate)
-                    {
-                        toProcess.Enqueue(i);
-                        
-                    }
-                }
-                _root = root;
-                _curTime = t;
-                _maxGrowth = maxGrowth;
-                _growRate = growRate;
-                _diamLengthScale = diamLengthScale;
-                _texScale = texScale;
-                _LOD = LOD;
-        }
-
-        if(a == 30)
+        for (int i = 0; i < root.Length; ++i)
         {
-            Debug.Log("rate: " + 1.0f * b / a);
-            a = b = 0;
-        }
+            if (root == null || root[i] == null) continue;
 
+            if (last_t < maxTime[i] || forceUpdate)
+            {
+                toProcess.Enqueue(i);
+                        
+            }
+        }
+        _root = root;
+        _curTime = t;
+        _maxGrowth = maxGrowth;
+        _growRate = growRate;
+        _diamLengthScale = diamLengthScale;
+        _texScale = texScale;
+        _LOD = LOD;
+        _mr.Set();
         
         return toProcess.Count > 0;
-    }
-
-    public void lateUpdate()
-    {
-
     }
 
     public bool updateSingle(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
@@ -229,8 +220,6 @@ public class SetupMeshGeomShader
             if (toProcess.TryDequeue(out idx))
             {
                 FillMeshData.fillVerticesTrianglesGeomShader(vertices[idx], triangles[idx], uv[idx], root[idx], curTime,
-                                                        maxGrowth,
-                                                        growRate,
                                                         diamLengthScale,
                                                         texScale,
                                                         LOD,
