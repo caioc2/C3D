@@ -4,14 +4,14 @@ using UnityEngine;
 using System;
 
 public class FillMeshData {
-
+    
     private unsafe static void transformAndFill(Vector3[] v, Vector3[] outv, float[] coords, float height, Vector2[]uv, ref int idx,
                                            Vector3 orientation,
                                            Vector3 normal, 
                                            Vector3 position, 
                                            float scale)
     {
-        var rot = Quaternion.FromToRotation(orientation/*.normalized*/, normal/*.normalized*/);
+        var rot = Quaternion.FromToRotation(orientation, normal);
         for (int i = 0; i < v.Length; ++i, ++idx)
         {
             outv[idx] = (rot * (v[i] * scale)) + position;
@@ -91,7 +91,7 @@ public class FillMeshData {
                 {
                     for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
                     {
-                        if (j == node.childrenStartIdx[k])
+                        if (j == node.childrenStartIdx[k]-1)
                         {
                             lastChild = k;
                             haveChild = true;
@@ -112,6 +112,7 @@ public class FillMeshData {
                     float height = texScale * (nodeLenJ - curLen);
                     transformAndFill(shape, vertices, coords, height, uv, ref vsi, orientation, node.points[j], curPos, maxDiam);
                 }
+                lastLen = node.length[j];
             }
 
             maxCount -= skipped;
@@ -243,7 +244,7 @@ public class FillMeshData {
                                 {
                                     for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
                                     {
-                                        if (j == node.childrenStartIdx[k])
+                                        if (j == node.childrenStartIdx[k]-1)
                                         {
                                             lastChild = k;
                                             haveChild = true;
@@ -298,18 +299,15 @@ public class FillMeshData {
                                 _vertices += 1;
                                 _uv += 1;
                                 vsi++;
-                                if (maxCount >= 3)
-                                {
-                                    int lastPoint1 = vsi - 1;
 
-                                    *_triangles = lastPoint1 - 2;
-                                    _triangles += 1;
-                                    *_triangles = lastPoint1 - 1;
-                                    _triangles += 1;
-                                    *_triangles = lastPoint1;
-                                    _triangles += 1;
-                                    tsi += 3;
-                                }
+                                int lastPoint1 = vsi - 1;
+                                *_triangles = lastPoint1 - 2;
+                                _triangles += 1;
+                                *_triangles = lastPoint1 - 1;
+                                _triangles += 1;
+                                *_triangles = lastPoint1;
+                                _triangles += 1;
+                                tsi += 3;
                             }
                             //Dummy vertex, in case there are not enough vertices to make a triangle
                             curPos *= 1.001f;

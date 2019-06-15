@@ -1,5 +1,5 @@
-﻿//#define USE_MULTI_THREAD
-//#define USE_GEOM_SHADER
+﻿#define USE_MULTI_THREAD
+#define USE_GEOM_SHADER
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

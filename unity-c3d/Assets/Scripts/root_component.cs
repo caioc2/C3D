@@ -15,6 +15,7 @@ public class root_component : MonoBehaviour {
     {
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.MarkDynamic();
         GetComponent<MeshFilter>().sharedMesh = mesh;
         mesh.name = "Root Of Shame";
         ps = GetComponent<ParticleSystem>();

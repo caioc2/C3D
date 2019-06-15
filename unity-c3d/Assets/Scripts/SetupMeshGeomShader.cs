@@ -214,8 +214,7 @@ public class SetupMeshGeomShader
         }
 
         float curTime = t;
-        Parallel.For(0, toProcess.Count, (i) =>
-        {
+        while (toProcess.Count > 0) { 
             int idx;
             if (toProcess.TryDequeue(out idx))
             {
@@ -227,7 +226,7 @@ public class SetupMeshGeomShader
                                                         out TCount[idx]);
                 toSetup.Enqueue(idx);
             }
-        });
+        }
 
         while (toSetup.Count > 0)
         {

@@ -241,10 +241,9 @@ public class SetupMeshMulti {
         }
 
         float curTime = t;
-        UnityEngine.Profiling.Profiler.BeginSample("Data processing");
-        Parallel.For(0, toProcess.Count, (i) =>
+        for (int j = 0; j < toProcess.Count; ++j)
         {
-            int idx = toProcess[i];
+            int idx = toProcess[j];
             FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], root[idx], curTime,
                                                     diamLengthScale,
                                                     shape,
@@ -253,18 +252,14 @@ public class SetupMeshMulti {
                                                     LOD,
                                                     out VCount[idx],
                                                     out TCount[idx]);
-        });
-        UnityEngine.Profiling.Profiler.EndSample();
+        }
 
-        UnityEngine.Profiling.Profiler.BeginSample("Mesh setup");
-        
         for (int j = 0; j < toProcess.Count; ++j)
         {
             int idx = toProcess[j];
             setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
             setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
         }
-        UnityEngine.Profiling.Profiler.EndSample();
         return toProcess.Count > 0;
     }
 
