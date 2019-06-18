@@ -5,14 +5,15 @@ using System;
 
 public class FillMeshData {
     
-    private unsafe static void transformAndFill(Vector3[] v, Vector3[] outv, float[] coords, float height, Vector2[]uv, ref int idx,
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private unsafe static void transformAndFill(Vector3 * v, int len, Vector3 * outv, float * coords, float height, Vector2 * uv, ref int idx,
                                            Vector3 orientation,
                                            Vector3 normal, 
                                            Vector3 position, 
                                            float scale)
     {
         var rot = Quaternion.FromToRotation(orientation, normal);
-        for (int i = 0; i < v.Length; ++i, ++idx)
+        for (int i = 0; i < len; ++i, ++idx)
         {
             outv[idx] = (rot * (v[i] * scale)) + position;
             uv[idx] = new Vector2(coords[i], height);
@@ -21,7 +22,7 @@ public class FillMeshData {
     
     private static Vector3 orientation = new Vector3(0.0f, 0.0f, 1.0f);
 
-    public static void fillVerticesTriangles(Vector3[] vertices,
+    public static unsafe void fillVerticesTriangles(Vector3[] vertices,
                                              int[] triangles,
                                              Vector2[] uv,
                                              List<MyTreeNode> root,
@@ -35,126 +36,151 @@ public class FillMeshData {
                                              out int TCount)
     {
 
-
-        int ii = 0;
-        int vsi = 0;
-        int tsi = 0;
-        int npts = shape.Length;
-        for (; ii < root.Count; ii++)
+        unsafe
         {
-            MyTreeNode node = root[ii];
 
-            float maxEpochF = maxf(0.0f, epoch - node.epoch);
-            int maxEpoch = (int)(maxEpochF);
-            float last = maxEpochF - (float)maxEpoch;
-            int maxCount = mini(node.points.Count, maxEpoch);
-
-            if (node.epoch > epoch)
-                break;// continue;
-
-
-            MyTreeNode parent = root[node.parentId];
-            int pId1 = mini(maxi(0, (int)epoch - parent.epoch), parent.points.Count - 1);
-            int pId2 = mini(pId1 + 1, parent.points.Count - 1);
-            float parentLen = (1.0f - last) * parent.length[pId1] + last * parent.length[pId2];
-            float parentMaxDiam = node.parentId == ii ? float.MaxValue : parent.maxDiameter;
-            node.maxDiameter = minf(parentMaxDiam, (parentLen - node.startLen) * diamLengthScale);
-
-
-            pId1 = maxi(0, maxCount - 1);
-            pId2 = maxi(0, mini(pId1 + 1, node.points.Count - 1));
-            float nodeLen = (1.0f - last) * node.length[pId1] + last * node.length[pId2];
-            float curLen = nodeLen;
-            float lastLen = 0;
-
-            Vector3 curPos = node.startPos;
-
-            int startVsi = vsi;
-
-            transformAndFill(shape, vertices, coords, 0.0f, uv, ref vsi, orientation, node.points[0], curPos, node.maxDiameter);
-
-            int skipped = 0;
-            float dlen = 0.0f;
-
-            int lastChild = -1;
-            for (int j = 0; j < maxCount; ++j)
+            fixed (Vector3* __vertices = &vertices[0])
             {
-                float nodeLenJ = node.length[j];
-                Vector3 pos = node.points[j];
-                curPos.x += pos.x; curPos.y += pos.y; curPos.z += pos.z;
-                curLen = nodeLen - nodeLenJ;
-
-                dlen = nodeLenJ - lastLen;
-
-                bool haveChild = false;
-                if (node.childrenStartIdx.Count > 0 && j <= node.childrenStartIdx[node.childrenStartIdx.Count - 1])
+                Vector3* _vertices = __vertices;
+                fixed (Vector2* __uv = &uv[0])
                 {
-                    for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
+                    Vector2* _uv = __uv;
+                    fixed (int* __triangles = &triangles[0])
                     {
-                        if (j == node.childrenStartIdx[k]-1)
+                        int* _triangles = __triangles;
+                        fixed (Vector3* __shape = &shape[0])
                         {
-                            lastChild = k;
-                            haveChild = true;
+                            Vector3* _shape = __shape;
+
+                            fixed (float* __coords = &coords[0])
+                            {
+                                float* _coords = __coords;
+
+                                int ii = 0;
+                                int vsi = 0;
+                                int tsi = 0;
+                                int npts = shape.Length;
+                                for (; ii < root.Count; ii++)
+                                {
+                                    MyTreeNode node = root[ii];
+
+                                    float maxEpochF = maxf(0.0f, epoch - node.epoch);
+                                    int maxEpoch = (int)(maxEpochF);
+                                    float last = maxEpochF - (float)maxEpoch;
+                                    int maxCount = mini(node.points.Count, maxEpoch);
+
+                                    if (node.epoch > epoch)
+                                        break;// continue;
+
+
+                                    MyTreeNode parent = root[node.parentId];
+                                    int pId1 = mini(maxi(0, (int)epoch - parent.epoch), parent.points.Count - 1);
+                                    int pId2 = mini(pId1 + 1, parent.points.Count - 1);
+                                    float parentLen = (1.0f - last) * parent.length[pId1] + last * parent.length[pId2];
+                                    float parentMaxDiam = node.parentId == ii ? float.MaxValue : parent.maxDiameter;
+                                    node.maxDiameter = minf(parentMaxDiam, (parentLen - node.startLen) * diamLengthScale);
+
+
+                                    pId1 = maxi(0, maxCount - 1);
+                                    pId2 = maxi(0, mini(pId1 + 1, node.points.Count - 1));
+                                    float nodeLen = (1.0f - last) * node.length[pId1] + last * node.length[pId2];
+                                    float curLen = nodeLen;
+                                    float lastLen = 0;
+
+                                    Vector3 curPos = node.startPos;
+
+                                    int startVsi = vsi;
+
+                                    transformAndFill(_shape, npts, _vertices, _coords, 0.0f, _uv, ref vsi, orientation, node.points[0], curPos, node.maxDiameter);
+
+                                    int skipped = 0;
+                                    float dlen = 0.0f;
+
+                                    int lastChild = -1;
+                                    for (int j = 0; j < maxCount; ++j)
+                                    {
+                                        float nodeLenJ = node.length[j];
+                                        Vector3 pos = node.points[j];
+                                        curPos.x += pos.x; curPos.y += pos.y; curPos.z += pos.z;
+                                        curLen = nodeLen - nodeLenJ;
+
+                                        dlen = nodeLenJ - lastLen;
+
+                                        bool haveChild = false;
+                                        if (node.childrenStartIdx.Count > 0 && j <= node.childrenStartIdx[node.childrenStartIdx.Count - 1])
+                                        {
+                                            for (int k = lastChild + 1; k < node.childrenStartIdx.Count; k++)
+                                            {
+                                                if (j == node.childrenStartIdx[k] - 1)
+                                                {
+                                                    lastChild = k;
+                                                    haveChild = true;
+                                                }
+                                            }
+                                        }
+
+                                        if (dlen < LOD && j != maxCount - 1 && !haveChild)
+                                        {
+                                            skipped += 1;
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            dlen = 0.0f;
+
+                                            float maxDiam = minf(node.maxDiameter, diamLengthScale * curLen);
+                                            float height = texScale * (nodeLenJ - curLen);
+                                            transformAndFill(_shape, npts, _vertices, _coords, height, _uv, ref vsi, orientation, node.points[j], curPos, maxDiam);
+                                        }
+                                        lastLen = node.length[j];
+                                    }
+
+                                    maxCount -= skipped;
+                                    for (int j = 0; j < maxCount; ++j, tsi += 6)
+                                    {
+                                        for (int k = 0; k < npts - 1; ++k, tsi += 6)
+                                        {
+                                            triangles[tsi + 0] = (int)(startVsi + (k) + (j) * npts);
+                                            triangles[tsi + 1] = (int)(startVsi + (k + 1) + (j) * npts);
+                                            triangles[tsi + 2] = (int)(startVsi + (k + 1) + (j + 1) * npts);
+                                            triangles[tsi + 3] = (int)(startVsi + (k) + (j) * npts);
+                                            triangles[tsi + 4] = (int)(startVsi + (k + 1) + (j + 1) * npts);
+                                            triangles[tsi + 5] = (int)(startVsi + (k) + (j + 1) * npts);
+                                        }
+                                        triangles[tsi + 0] = (int)(startVsi + (npts - 1) + (j) * npts);
+                                        triangles[tsi + 1] = (int)(startVsi + (j) * npts);
+                                        triangles[tsi + 2] = (int)(startVsi + (j + 1) * npts);
+                                        triangles[tsi + 3] = (int)(startVsi + (npts - 1) + (j) * npts);
+                                        triangles[tsi + 4] = (int)(startVsi + (j + 1) * npts);
+                                        triangles[tsi + 5] = (int)(startVsi + (npts - 1) + (j + 1) * npts);
+                                    }
+
+                                    if (maxCount < node.points.Count)
+                                    {
+                                        vertices[vsi] = (curPos + node.points[maxCount] * last);
+                                        uv[vsi] = new Vector2(0.5f, nodeLen);
+                                        vsi++;
+                                        int lastPoint = vsi - 1;
+                                        for (int k = 0; k < npts - 1; ++k, tsi += 3)
+                                        {
+                                            triangles[tsi + 0] = (int)(startVsi + (k + 1) + maxCount * npts);
+                                            triangles[tsi + 1] = (int)(startVsi + (k) + maxCount * npts);
+                                            triangles[tsi + 2] = (int)(lastPoint);
+                                        }
+                                        triangles[tsi + 0] = (int)(startVsi + maxCount * npts);
+                                        triangles[tsi + 1] = (int)(startVsi + (npts - 1) + maxCount * npts);
+                                        triangles[tsi + 2] = (int)(lastPoint);
+                                        tsi += 3;
+                                    }
+                                }
+                                VCount = vsi;
+                                TCount = tsi;
+                            }
                         }
                     }
                 }
-
-                if (dlen < LOD && j != maxCount - 1 && !haveChild)
-                {
-                    skipped += 1;
-                    continue;
-                }
-                else
-                {
-                    dlen = 0.0f;
-
-                    float maxDiam = minf(node.maxDiameter, diamLengthScale * curLen);
-                    float height = texScale * (nodeLenJ - curLen);
-                    transformAndFill(shape, vertices, coords, height, uv, ref vsi, orientation, node.points[j], curPos, maxDiam);
-                }
-                lastLen = node.length[j];
-            }
-
-            maxCount -= skipped;
-            for (int j = 0; j < maxCount; ++j, tsi+=6)
-            {
-                for (int k = 0; k < npts - 1; ++k, tsi+=6)
-                {
-                    triangles[tsi + 0] = (int)(startVsi + (k    ) + (j    ) * npts);
-                    triangles[tsi + 1] = (int)(startVsi + (k + 1) + (j    ) * npts);
-                    triangles[tsi + 2] = (int)(startVsi + (k + 1) + (j + 1) * npts);
-                    triangles[tsi + 3] = (int)(startVsi + (k    ) + (j    ) * npts);
-                    triangles[tsi + 4] = (int)(startVsi + (k + 1) + (j + 1) * npts);
-                    triangles[tsi + 5] = (int)(startVsi + (k    ) + (j + 1) * npts);
-                }
-                triangles[tsi + 0] = (int)(startVsi + (npts - 1) + (j    ) * npts);
-                triangles[tsi + 1] = (int)(startVsi +              (j    ) * npts);
-                triangles[tsi + 2] = (int)(startVsi +              (j + 1) * npts);
-                triangles[tsi + 3] = (int)(startVsi + (npts - 1) + (j    ) * npts);
-                triangles[tsi + 4] = (int)(startVsi +              (j + 1) * npts);
-                triangles[tsi + 5] = (int)(startVsi + (npts - 1) + (j + 1) * npts);
-            }
-
-            if (maxCount < node.points.Count)
-            {
-                vertices[vsi] = (curPos + node.points[maxCount] * last);
-                uv[vsi]=new Vector2(0.5f, nodeLen);
-                vsi++;
-                int lastPoint = vsi - 1;
-                for (int k = 0; k < npts - 1; ++k, tsi+=3)
-                {
-                    triangles[tsi + 0] = (int)(startVsi + (k + 1) + maxCount * npts);
-                    triangles[tsi + 1] = (int)(startVsi + (k    ) + maxCount * npts);
-                    triangles[tsi + 2] = (int)(lastPoint);
-                }
-                triangles[tsi + 0] = (int)(startVsi +              maxCount * npts);
-                triangles[tsi + 1] = (int)(startVsi + (npts - 1) + maxCount * npts);
-                triangles[tsi + 2] = (int)(lastPoint);
-                tsi += 3;
             }
         }
-        VCount = vsi;
-        TCount = tsi;
     }
 
     private static int mini(int a, int b) => ((a > b) ? b : a);

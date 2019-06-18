@@ -181,6 +181,8 @@ public class SetupMeshMulti {
         _cd.Reset();
 
         _mr.Reset();
+
+        UnityEngine.Profiling.Profiler.BeginSample("Mesh setup()");
         lock (toSetup)
         {
             for (int i = 0; i < toSetup.Count; ++i)
@@ -191,6 +193,7 @@ public class SetupMeshMulti {
             }
             toSetup.Clear();
         }
+        UnityEngine.Profiling.Profiler.EndSample();
 
         lock (toProcess)
         {
