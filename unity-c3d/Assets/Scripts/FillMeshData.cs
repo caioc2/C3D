@@ -324,11 +324,7 @@ public class FillMeshData {
                                 int lastPoint1 = vsi - 1;
                                 *_triangles = lastPoint1 - 2;
                                 _triangles += 1;
-                                *_triangles = lastPoint1 - 1;
-                                _triangles += 1;
-                                *_triangles = lastPoint1;
-                                _triangles += 1;
-                                tsi += 3;
+                                tsi++;
                             }
                             //Dummy vertex, in case there are not enough vertices to make a triangle
                             curPos *= 1.001f;
