@@ -10,6 +10,10 @@ public class root_component : MonoBehaviour {
     public Vector3 startDir = new Vector3(0.0f, 0.0f, 0.0f);
     public Mesh mesh;
     public ParticleSystem ps;
+    public Vector3 pos;
+    public Quaternion rot;
+    public Material mat;
+    public Matrix4x4 obj2World;
 
     void Awake()
     {
@@ -19,5 +23,8 @@ public class root_component : MonoBehaviour {
         GetComponent<MeshFilter>().sharedMesh = mesh;
         mesh.name = "Root Of Shame";
         ps = GetComponent<ParticleSystem>();
+        pos = transform.position;
+        rot = transform.rotation;
+        obj2World = transform.localToWorldMatrix;
     }
 }

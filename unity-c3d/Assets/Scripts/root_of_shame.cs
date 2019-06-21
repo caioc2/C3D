@@ -1,11 +1,8 @@
 ﻿#define USE_MULTI_THREAD
 //#define USE_GEOM_SHADER
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using System;
-using System.Threading;
 
 public class root_of_shame : MonoBehaviour {
 
@@ -155,7 +152,7 @@ public class root_of_shame : MonoBehaviour {
 #endif
         for (int i = 0; i < comp.Length; ++i)
         {
-            (comp[i].GetComponent<MeshRenderer>()).material = mat;
+            (comp[i].GetComponent<MeshRenderer>()).material = comp[i].mat = new Material(mat);
             root[i] = GenerateRootSkeleton.generateSkeleton(comp[i],
                                                             useGlobalEpoch,
                                                             minEpoch,

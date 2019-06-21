@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Threading;
@@ -181,8 +179,7 @@ public class SetupMeshMulti {
         _cd.Reset();
 
         _mr.Reset();
-
-        UnityEngine.Profiling.Profiler.BeginSample("Mesh setup()");
+        
         lock (toSetup)
         {
             for (int i = 0; i < toSetup.Count; ++i)
@@ -193,7 +190,6 @@ public class SetupMeshMulti {
             }
             toSetup.Clear();
         }
-        UnityEngine.Profiling.Profiler.EndSample();
 
         lock (toProcess)
         {

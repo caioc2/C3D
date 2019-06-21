@@ -1,16 +1,19 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Concurrent;
 using UnityEngine;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 public class SetupMeshGeomShader
 {
     private List<Vector3[]> vertices;
     private List<Vector2[]> uv;
     private List<int[]> triangles;
+
+    private List<ComputeBuffer> vv;
+    private List<ComputeBuffer> uu;
+    private List<ComputeBuffer> tt;
+
     private volatile ConcurrentQueue<int> toProcess;
     private volatile ConcurrentQueue<int> toSetup;
     int[] VCount;
@@ -91,14 +94,35 @@ public class SetupMeshGeomShader
         VCount = new int[numTrees];
         TCount = new int[numTrees];
         maxTime = new int[numTrees];
+
+        vv = new List<ComputeBuffer>();
+        uu = new List<ComputeBuffer>();
+        tt = new List<ComputeBuffer>();
+    }
+
+    public void clearVecs()
+    {
+        vertices.Clear();
+        uv.Clear();
+        triangles.Clear();
+
+        if(vv != null)
+        {
+            for(int i = 0; i < vv.Count; i++)
+            {
+                vv[i].Dispose();
+                uu[i].Dispose();
+                tt[i].Dispose();
+            }
+        }
     }
 
 
     public void setCapacity(List<MyTreeNode>[] root)
     {
-        vertices.Clear();
-        uv.Clear();
-        triangles.Clear();
+
+        clearVecs();
+
         for (int i = 0; i < root.Length; ++i)
         {
             maxTime[i] = root[i][root[i].Count - 1].epoch + root[i][root[i].Count - 1].points.Count + 1;
@@ -109,28 +133,12 @@ public class SetupMeshGeomShader
             }
             vertices.Add(new Vector3[numVertices + 1]);
             uv.Add(new Vector2[numVertices + 1]);
-            triangles.Add(new int[3 * numVertices]);
+            triangles.Add(new int[numVertices]);
 
-        }
-    }
+            vv.Add(new ComputeBuffer(numVertices + 1, 3*sizeof(float)));
+            uu.Add(new ComputeBuffer(numVertices + 1, 2*sizeof(float)));
+            tt.Add(new ComputeBuffer(numVertices, sizeof(int)));
 
-    void setupMesh(Mesh mesh, ParticleSystem ps, Vector3[] v, Vector2[] uv, int[] tri, int VCount, int TCount)
-    {
-        mesh.Clear();
-
-        mesh.SetVertices(v, 0, VCount);
-        mesh.SetTriangles(tri, 0, TCount, 0);
-        mesh.SetUVs(0, uv, 0, VCount);
-
-        //Assigning triangles automatically recalculates the bounding volume.
-        //mesh.RecalculateBounds();
-
-        if (ps != null)
-        {
-            var sh = ps.shape;
-            sh.enabled = true;
-            sh.shapeType = ParticleSystemShapeType.Mesh;
-            sh.mesh = mesh;
         }
     }
 
@@ -166,8 +174,16 @@ public class SetupMeshGeomShader
             int idx;
             if (toSetup.TryDequeue(out idx))
             {
-                setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
-                setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
+                vv[idx].SetData(vertices[idx], 0, 0, VCount[idx]);
+                uu[idx].SetData(uv[idx], 0, 0, VCount[idx]);
+                tt[idx].SetData(triangles[idx], 0, 0, TCount[idx]);
+
+                comp[idx].mat.SetBuffer("_vertices", vv[idx]);
+                comp[idx].mat.SetBuffer("_uv", uu[idx]);
+                comp[idx].mat.SetBuffer("_triangles", tt[idx]);
+                comp[idx].mat.SetMatrix("_obj2World", comp[idx].obj2World);
+
+                Graphics.DrawProcedural(comp[idx].mat, new Bounds(comp[idx].pos, new Vector3(10, 10, 10)), MeshTopology.Points, TCount[idx]);
             }
         }
 
@@ -233,7 +249,16 @@ public class SetupMeshGeomShader
             int idx;
             if (toSetup.TryDequeue(out idx))
             {
-                setupMesh(comp[idx].mesh, comp[idx].ps, vertices[idx], uv[idx], triangles[idx], VCount[idx], TCount[idx]);
+                vv[idx].SetData(vertices[idx], 0, 0, VCount[idx]);
+                uu[idx].SetData(uv[idx], 0, 0, VCount[idx]);
+                tt[idx].SetData(triangles[idx], 0, 0, TCount[idx]);
+
+                comp[idx].mat.SetBuffer("_vertices", vv[idx]);
+                comp[idx].mat.SetBuffer("_uv", uu[idx]);
+                comp[idx].mat.SetBuffer("_triangles", tt[idx]);
+                comp[idx].mat.SetMatrix("_obj2World", comp[idx].obj2World);
+
+                Graphics.DrawProcedural(comp[idx].mat, new Bounds(comp[idx].pos, new Vector3(1000000, 1000000, 1000000)), MeshTopology.Points, TCount[idx]);
                 setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
             }
         }
@@ -275,5 +300,6 @@ public class SetupMeshGeomShader
     {
         isRunning = false;
         for (int i = 0; i < td.Length; ++i) td[i].Join();
+        clearVecs();
     }
 }

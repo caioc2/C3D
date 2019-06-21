@@ -5,6 +5,8 @@
 #include "UnityGBuffer.cginc"
 #include "UnityStandardUtils.cginc"
 
+#pragma enable_d3d11_debug_symbols
+
 // Cube map shadow caster; Used to render point light shadows on platforms
 // that lacks depth cube map support.
 #if defined(SHADOWS_CUBE) && !defined(SHADOWS_CUBE_IN_DEPTH_TEX)
@@ -27,14 +29,22 @@ float _OcclusionStrength;
 
 float _LocalTime;
 float _extStrenght;
+int _uid;
 
-// Vertex input attributes
-struct Attributes
+StructuredBuffer<float3> _vertices;
+StructuredBuffer<float2> _uv;
+StructuredBuffer<int> _triangles;
+
+float4x4 _obj2World;
+
+
+struct VOut
 {
-    float4 position : POSITION;
-    float3 normal : NORMAL;
-    float4 tangent : TANGENT;
-    float2 texcoord : TEXCOORD;
+	float4 p0 : POSITION0;
+	float4 p1 : POSITION1;
+	float4 p2 : POSITION2;
+	float2 uv0 : TEXCOORD0;
+	float2 uv1 : TEXCOORD1;
 };
 
 // Fragment varyings
@@ -65,14 +75,17 @@ struct Varyings
 // Vertex stage
 //
 
-Attributes Vertex(Attributes input)
+VOut Vertex(uint uid : SV_VertexID)
 {
-    // Only do object space to world space transform.
-    input.position = mul(unity_ObjectToWorld, input.position);
-    //input.normal = UnityObjectToWorldNormal(input.normal);
-    //input.tangent.xyz = UnityObjectToWorldDir(input.tangent.xyz);
-    //input.texcoord = TRANSFORM_TEX(input.texcoord, _MainTex);
-    return input;
+	uint3 tri_idx = _triangles[uid];
+	
+	VOut o;
+	o.p0 = mul(_obj2World, float4(_vertices[tri_idx.x], 1.0f));
+	o.p1 = mul(_obj2World, float4(_vertices[tri_idx.x+1], 1.0f));
+	o.p2 = mul(_obj2World, float4(_vertices[tri_idx.x+2], 1.0f));
+	o.uv0 = _uv[tri_idx.x];
+	o.uv1 = _uv[tri_idx.x+1];
+    return o;
 }
 
 //
@@ -138,7 +151,7 @@ float3x3 rotationMatrix(float3 b)
 	return vm;
 }
 
-#define nc (6)
+#define nc (3)
 #define PI (3.14159265f)
 
 
@@ -150,10 +163,11 @@ void transformCircle(float3 p[nc], float3 pos, float scale, float3 normal, out f
 }
 [maxvertexcount(nc*2+2)]
 void Geometry(
-    triangle Attributes input[3], uint pid : SV_PrimitiveID,
+    point VOut input[1],
     inout TriangleStream<Varyings> outStream
 )
-{
+{	
+	
 	//Circle discretized in nc points
 	static float3 c[nc];
 	for (uint i = 0; i < nc; ++i) {
@@ -161,18 +175,16 @@ void Geometry(
 		c[i] = float3(cos(t), 0.0f, sin(t));
 	}
 
-	/*static const float3 c[3] = { float3(cos(t0), 0.0f, sin(t0)),
-								 float3(cos(t1), 0.0f, sin(t1)),
-								 float3(cos(t2), 0.0f, sin(t2)) };*/
 
-	float3 p0 = input[0].position.xyz;
-	float3 p1 = input[1].position.xyz;
+	float3 p0 = input[0].p0.xyz;
+	float3 p1 = input[0].p1.xyz;
+	float3 p2 = input[0].p2.xyz;
 
 	half3 n0 = normalize(half3(p1 - p0));
-	half3 n1 = normalize(half3(input[2].position.xyz - p1));
+	half3 n1 = normalize(half3(p2 - p1));
 	//tree diameter at node i stored in the texcoord.x
-	float s0 = input[0].texcoord.x;
-	float s1 = input[1].texcoord.x;
+	float s0 = input[0].uv0.x;
+	float s1 = input[0].uv1.x;
 
 	float3 a[nc], b[nc];
 
@@ -180,24 +192,15 @@ void Geometry(
 	transformCircle(c, p1, s1, n1, b);
 
 	for (uint i = 0; i < nc - 1; ++i) {
-		outStream.Append(VertexOutput(a[i], normalize(half3(a[i] - p0)), half4(normalize(a[i+1] - a[i]), 1.0f), float2(i / (nc*1.0f), input[0].texcoord.y)));
-		outStream.Append(VertexOutput(b[i], normalize(half3(b[i] - p1)), half4(normalize(b[i+1] - b[i]), 1.0f), float2(i / (nc*1.0f), input[1].texcoord.y)));
+		outStream.Append(VertexOutput(a[i], normalize(half3(a[i] - p0)), half4(normalize(a[i+1] - a[i]), 1.0f), float2(i / (nc*1.0f), input[0].uv0.y)));
+		outStream.Append(VertexOutput(b[i], normalize(half3(b[i] - p1)), half4(normalize(b[i+1] - b[i]), 1.0f), float2(i / (nc*1.0f), input[0].uv1.y)));
 	}
-	outStream.Append(VertexOutput(a[nc-1], normalize(half3(a[nc - 1] - p0)), half4(normalize(a[0] - a[nc - 1]), 1.0f), float2((nc - 1.0f) / (nc*1.0f), input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[nc - 1], normalize(half3(b[nc - 1] - p1)), half4(normalize(b[0] - b[nc - 1]), 1.0f), float2((nc-1.0f) / (nc*1.0f), input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / (nc*1.0f), input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / (nc*1.0f), input[1].texcoord.y)));
+	outStream.Append(VertexOutput(a[nc-1], normalize(half3(a[nc - 1] - p0)), half4(normalize(a[0] - a[nc - 1]), 1.0f), float2((nc - 1.0f) / (nc*1.0f), input[0].uv0.y)));
+	outStream.Append(VertexOutput(b[nc - 1], normalize(half3(b[nc - 1] - p1)), half4(normalize(b[0] - b[nc - 1]), 1.0f), float2((nc-1.0f) / (nc*1.0f), input[0].uv1.y)));
+	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / (nc*1.0f), input[0].uv0.y)));
+	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / (nc*1.0f), input[0].uv1.y)));
 	outStream.RestartStrip();
-
-	/*outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[1], normalize(half3(a[1] - p0)), half4(normalize(a[2] - a[1]), 1.0f), float2(1.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[1], normalize(half3(b[1] - p1)), half4(normalize(b[2] - b[1]), 1.0f), float2(1.0f / 3.0f, input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[2], normalize(half3(a[2] - p0)), half4(normalize(a[0] - a[2]), 1.0f), float2(2.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[2], normalize(half3(b[2] - p1)), half4(normalize(b[0] - b[2]), 1.0f), float2(2.0f / 3.0f, input[1].texcoord.y)));
-	outStream.Append(VertexOutput(a[0], normalize(half3(a[0] - p0)), half4(normalize(a[1] - a[0]), 1.0f), float2(0.0f / 3.0f, input[0].texcoord.y)));
-	outStream.Append(VertexOutput(b[0], normalize(half3(b[0] - p1)), half4(normalize(b[1] - b[0]), 1.0f), float2(0.0f / 3.0f, input[1].texcoord.y)));
-	outStream.RestartStrip();*/
+	
 }
 
 //

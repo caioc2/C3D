@@ -21,7 +21,7 @@ Shader "Standard Geometry Shader Example"
         _OcclusionStrength("Strength", Range(0, 1)) = 1
 
         [Space]
-        _LocalTime("Animation Time", Float) = 0.0
+		_LocalTime("Animation Time", Float) = 0.0
 		_extStrenght("Extrusion strenght", Float) = 1.0
     }
     SubShader

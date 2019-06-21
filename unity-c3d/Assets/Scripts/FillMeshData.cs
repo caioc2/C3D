@@ -303,15 +303,10 @@ public class FillMeshData {
 
                             maxCount -= skipped;
                             //Dummy triangles i, i+1, i+2
-                            for (int j = 0; j <= maxCount - 2; ++j)
+                            for (int j = 0; j <= maxCount - 2; ++j, tsi++)
                             {
                                 *_triangles = startVsi + j;
                                 _triangles += 1;
-                                *_triangles = startVsi + j + 1;
-                                _triangles += 1;
-                                *_triangles = startVsi + j + 2;
-                                _triangles += 1;
-                                tsi += 3;
                             }
 
                             if (maxCount < node.points.Count)
@@ -345,12 +340,7 @@ public class FillMeshData {
                             int lastPoint = vsi - 1;
 
                             *_triangles = lastPoint - 2;
-                            _triangles += 1;
-                            *_triangles = lastPoint - 1;
-                            _triangles += 1;
-                            *_triangles = lastPoint;
-                            _triangles += 1;
-                            tsi += 3;
+                            tsi++;
                         }
                         VCount = vsi;
                         TCount = tsi;
