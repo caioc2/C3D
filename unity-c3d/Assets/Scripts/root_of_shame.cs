@@ -81,8 +81,9 @@ public class root_of_shame : MonoBehaviour {
     public Material geomMat;
     [Header("Force update every frame (benchmark)")]
     public  bool forceUpdate = false;
-    [Header("SMT")]
-    public bool smt = true;
+    [Header("#CPU Threads")]
+    [Range(1, 16)]
+    public int threads = 2;
 
     private DayNightCycle dnc;
 
@@ -134,17 +135,16 @@ public class root_of_shame : MonoBehaviour {
     {
         comp = (root_component[])transform.GetComponentsInChildren<root_component>();
         root = new List<MyTreeNode>[comp.Length];
-        int coreCount = Environment.ProcessorCount / (smt ? 2 : 1);
 #if !USE_GEOM_SHADER
 #if USE_MULTI_THREAD
-        mt = new SetupMeshMulti(true, comp.Length, coreCount);
+        mt = new SetupMeshMulti(true, comp.Length, threads);
 #else
         mt =  new SetupMeshMulti(false, comp.Length);
 #endif
         Material mat = defMat;
 #else
 #if USE_MULTI_THREAD
-        gs =  new SetupMeshGeomShader(true, comp.Length, coreCount);
+        gs =  new SetupMeshGeomShader(true, comp.Length, threads);
 #else
         gs =  new SetupMeshGeomShader(false, comp.Length);
 #endif

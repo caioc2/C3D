@@ -3,12 +3,15 @@ using System.Collections.Concurrent;
 using UnityEngine;
 using System;
 using System.Threading;
+using Unity.Mathematics;
+using Unity.Burst;
+using Unity.Collections;
 
 public class SetupMeshGeomShader
 {
-    private List<Vector3[]> vertices;
-    private List<Vector2[]> uv;
-    private List<int[]> triangles;
+    private List<NativeArray<float3>> vertices;
+    private List<NativeArray<float2>> uv;
+    private List<NativeArray<int>> triangles;
 
     private List<ComputeBuffer> vv;
     private List<ComputeBuffer> uu;
@@ -31,7 +34,7 @@ public class SetupMeshGeomShader
     private float _texScale;
     private float _LOD;
     private volatile bool isRunning = true;
-    private ManualResetEvent _mr;
+    private ManualResetEventSlim _mr;
     private CountdownEvent _cd;
 
     public SetupMeshGeomShader(bool threaded, int numObj, int tCount = 1)
@@ -41,7 +44,7 @@ public class SetupMeshGeomShader
         toSetup = new ConcurrentQueue<int>();
         if(threaded) {
             int nt = Math.Max(1, tCount);
-            _mr = new ManualResetEvent(false);
+            _mr = new ManualResetEventSlim(false);
             _cd = new CountdownEvent(numObj);
 
             //Start zeroed
@@ -65,7 +68,7 @@ public class SetupMeshGeomShader
                         int idx = -1;
                         if (!toProcess.TryDequeue(out idx))
                         {
-                            _mr.WaitOne();
+                            _mr.Wait();
                         }
                         else
                         {
@@ -88,9 +91,9 @@ public class SetupMeshGeomShader
 
     public void allocVecs(int numTrees)
     {
-        vertices = new List<Vector3[]>();
-        uv = new List<Vector2[]>();
-        triangles = new List<int[]>();
+        vertices = new List<NativeArray<float3>>();
+        uv = new List<NativeArray<float2>>();
+        triangles = new List<NativeArray<int>>();
         VCount = new int[numTrees];
         TCount = new int[numTrees];
         maxTime = new int[numTrees];
@@ -102,9 +105,19 @@ public class SetupMeshGeomShader
 
     public void clearVecs()
     {
-        vertices.Clear();
-        uv.Clear();
-        triangles.Clear();
+        if (vertices != null)
+        {
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                vertices[i].Dispose();
+                uv[i].Dispose();
+                triangles[i].Dispose();
+            }
+            vertices.Clear();
+            uv.Clear();
+            triangles.Clear();
+        }
+        
 
         if(vv != null)
         {
@@ -131,9 +144,9 @@ public class SetupMeshGeomShader
             {
                 numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 2 : 4;
             }
-            vertices.Add(new Vector3[numVertices + 1]);
-            uv.Add(new Vector2[numVertices + 1]);
-            triangles.Add(new int[numVertices]);
+            vertices.Add(new NativeArray<float3>(numVertices + 1, Allocator.Persistent));
+            uv.Add(new NativeArray<float2>(numVertices + 1, Allocator.Persistent));
+            triangles.Add(new NativeArray<int>(numVertices, Allocator.Persistent));
 
             vv.Add(new ComputeBuffer(numVertices + 1, 3*sizeof(float)));
             uu.Add(new ComputeBuffer(numVertices + 1, 2*sizeof(float)));

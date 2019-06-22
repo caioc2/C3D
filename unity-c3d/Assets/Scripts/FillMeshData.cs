@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Unity.Mathematics;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 public class FillMeshData {
     
@@ -191,9 +195,9 @@ public class FillMeshData {
 
     private static float maxf(float a, float b) => ((a < b) ? b : a);
 
-    public static void fillVerticesTrianglesGeomShader(Vector3[] vertices,
-                                             int[] triangles,
-                                             Vector2[] uv,
+    public static void fillVerticesTrianglesGeomShader(NativeArray<float3> vertices,
+                                             NativeArray<int> triangles,
+                                             NativeArray<float2> uv,
                                              List<MyTreeNode> root,
                                              float epoch,
                                              float diamLengthScale,
@@ -204,16 +208,12 @@ public class FillMeshData {
     {   unsafe
         {
 
-            fixed (Vector3* __vertices = &vertices[0])
+            float3* _vertices = (float3*)NativeArrayUnsafeUtility.GetUnsafePtr(vertices);
             {
-                Vector3* _vertices = __vertices;
-                fixed (Vector2* __uv = &uv[0])
+                float2* _uv = (float2*)NativeArrayUnsafeUtility.GetUnsafePtr(uv);
                 {
-                    Vector2* _uv = __uv;
-                    fixed (int* __triangles = &triangles[0])
+                    int* _triangles = (int*)NativeArrayUnsafeUtility.GetUnsafePtr(triangles);
                     {
-                        int* _triangles = __triangles;
-
                         int ii = 0;
                         int vsi = 0;
                         int tsi = 0;
