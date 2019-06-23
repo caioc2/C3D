@@ -137,9 +137,6 @@ public class SetupMeshMulti {
         mesh.SetTriangles(tri, 0, TCount, 0);
         mesh.SetUVs(0, uv, 0, VCount);
 
-        //Assigning triangles automatically recalculates the bounding volume.
-        //mesh.RecalculateBounds();
-
         if (ps != null)
         {
             var sh = (ps.GetComponent<ParticleSystem>()).shape;

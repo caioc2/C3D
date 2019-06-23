@@ -142,7 +142,8 @@ public class SetupMeshGeomShader
             int numVertices = 0;
             for (int j = 0; j < root[i].Count; ++j)
             {
-                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 2 : 4;
+                //Starting point + point.Count + 2 dummy
+                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 3 : 5;
             }
             vertices.Add(new NativeArray<float3>(numVertices + 1, Allocator.Persistent));
             uv.Add(new NativeArray<float2>(numVertices + 1, Allocator.Persistent));

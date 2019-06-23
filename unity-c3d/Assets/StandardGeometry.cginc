@@ -1,4 +1,4 @@
-// Standard geometry shader example
+﻿// Standard geometry shader example
 // https://github.com/keijiro/StandardGeometryShader
 
 #include "UnityCG.cginc"
@@ -77,6 +77,7 @@ struct Varyings
 
 VOut Vertex(uint uid : SV_VertexID)
 {
+	//Load the points and uv to construct the surface
 	uint3 tri_idx = _triangles[uid];
 	
 	VOut o;
@@ -127,8 +128,16 @@ float3 ConstructNormal(float3 v1, float3 v2, float3 v3)
     return normalize(cross(v2 - v1, v3 - v1));
 }
 
+///https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+
 //return the rotation matrix which transforms vector a(0,1,0) onto b, assumes a and b normalized
-//https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+
+//A quaternion float4 (q) represents rotation of θ degrees around a given axis (x,y,z)
+//Applying this transformation on a point p is \Phi_q(p) = qpq* = cosθ p + (1 − cosθ)dot(n, p) n + sinθ cross(n, p).
+//With n = normalize(cross(p,q))
+//Exapanding and simplifying \Phi_q(p) =  (I + sinθ [n] + sin²θ (1 - cos θ) [n]²)p
+//                                     =  (I + [cross(a,b)] + 1 /(dot(a,b) + 1) [cross(a,b)]²)p
+// With [x] the skew-symetric cross product matrix of x.
 float3x3 rotationMatrix(float3 b)
 {
 	static const float eps = 1e-10;
@@ -191,6 +200,10 @@ void Geometry(
 	transformCircle(c, p0, s0, n0, a);
 	transformCircle(c, p1, s1, n1, b);
 
+	//Triangle Strip  2  4  2i 2
+	//                |\ |\ |\ |
+	//                | \| \| \|
+	//                1  3 2i+1 1
 	for (uint i = 0; i < nc - 1; ++i) {
 		outStream.Append(VertexOutput(a[i], normalize(half3(a[i] - p0)), half4(normalize(a[i+1] - a[i]), 1.0f), float2(i / (nc*1.0f), input[0].uv0.y)));
 		outStream.Append(VertexOutput(b[i], normalize(half3(b[i] - p1)), half4(normalize(b[i+1] - b[i]), 1.0f), float2(i / (nc*1.0f), input[0].uv1.y)));

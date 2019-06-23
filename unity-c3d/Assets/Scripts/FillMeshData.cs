@@ -226,7 +226,7 @@ public class FillMeshData {
                             float last = maxEpochF - (float)maxEpoch;
                             int maxCount = mini(node.points.Count, maxEpoch);
 
-                            if (node.epoch > epoch+1)
+                            if (node.epoch > epoch)
                                 continue;
 
                             MyTreeNode parent = root[node.parentId];
@@ -243,7 +243,7 @@ public class FillMeshData {
                             float curLen = nodeLen;
                             float lastLen = 0;
 
-                            Vector3 curPos = node.startPos;
+                            float3 curPos = node.startPos;
 
                             int startVsi = vsi;
                             _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
@@ -259,7 +259,7 @@ public class FillMeshData {
                             for (int j = 0; j < maxCount; ++j)
                             {
                                 float nodeLenJ = node.length[j];
-                                Vector3 pos = node.points[j];
+                                float3 pos = node.points[j];
                                 curPos.x += pos.x; curPos.y += pos.y; curPos.z += pos.z;
                                 curLen = nodeLen - nodeLenJ;
 
@@ -302,43 +302,37 @@ public class FillMeshData {
                             }
 
                             maxCount -= skipped;
-                            //Dummy triangles i, i+1, i+2
-                            for (int j = 0; j <= maxCount - 2; ++j, tsi++)
+                            for (int j = 0; j <= maxCount; ++j, tsi++)
                             {
                                 *_triangles = startVsi + j;
                                 _triangles += 1;
                             }
 
-                            int lastIdx = maxCount - 1;
+                            int idx = maxCount - 1;
+                            float mult = 1.0f;
                             if (maxCount < node.points.Count)
                             {
-                                Vector3 pos = node.points[maxCount];
-                                curPos.x += pos.x * last; curPos.y += pos.y * last; curPos.z += pos.z * last;
-                                _vertices->x = curPos.x;
-                                _vertices->y = curPos.y;
-                                _vertices->z = curPos.z;
-                                _uv->x = 0.0001f; _uv->y = nodeLen;
-                                _vertices += 1;
-                                _uv += 1;
-                                vsi++;
-
-                                int lastPoint1 = vsi - 1;
-                                *_triangles = lastPoint1 - 1;
-                                _triangles += 1;
-                                tsi++;
-                                lastIdx = maxCount;
+                                idx = maxCount;
+                                mult = last;
                             }
-                            //Dummy vertex, in case there are not enough vertices to make a triangle
-                            //curPos += node.points[lastIdx];
+
+                            float3 final = node.points[idx];
+                            curPos.x += final.x * mult; curPos.y += final.y * mult; curPos.z += final.z * mult;
+                            _vertices->x = curPos.x;
+                            _vertices->y = curPos.y;
+                            _vertices->z = curPos.z;
+                            _uv->x = 0.0001f; _uv->y = nodeLen;
+                            _vertices += 1;
+                            _uv += 1;
+                            vsi++;
+                            
+                            //Dummy vertex for geometry shader which takes 3 points
+                            curPos += final;
                             _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
                             _uv->x = 0.0001f; _uv->y = nodeLen;
                             _vertices += 1;
                             _uv += 1;
                             vsi++;
-                            //int lastPoint = vsi - 1;
-
-                            //*_triangles = lastPoint - 4;
-                            //tsi++;
                         }
                         VCount = vsi;
                         TCount = tsi;
