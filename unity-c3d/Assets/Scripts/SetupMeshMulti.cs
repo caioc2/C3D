@@ -173,8 +173,6 @@ public class SetupMeshMulti {
                        bool forceUpdate)
     {
         _cd.Wait();
-        _cd.Reset();
-
         _mr.Reset();
         
         lock (toSetup)
@@ -199,16 +197,21 @@ public class SetupMeshMulti {
                     toProcess.Add(i);
                 }
             }
-            _root = root;
-            _curTime = t;
-            _maxGrowth = maxGrowth;
-            _growRate = growRate;
-            _diamLengthScale = diamLengthScale;
-            _texScale = texScale;
-            _LOD = LOD;
-            _shape = shape;
-            _coords = coords;
-            _mr.Set();
+            if(toProcess.Count > 0)
+            {
+                _root = root;
+                _curTime = t;
+                _maxGrowth = maxGrowth;
+                _growRate = growRate;
+                _diamLengthScale = diamLengthScale;
+                _texScale = texScale;
+                _LOD = LOD;
+                _shape = shape;
+                _coords = coords;
+
+                _cd.Reset();
+                _mr.Set();
+            }
         }
 
         return toProcess.Count > 0;
@@ -301,8 +304,7 @@ public class SetupMeshMulti {
     public void OnDestroy()
     {
         isRunning = false;
+        _mr.Set();
         for (int i = 0; i < td.Length; ++i) td[i].Join();
-        _mr.Dispose();
-        _cd.Dispose();
     }
 }

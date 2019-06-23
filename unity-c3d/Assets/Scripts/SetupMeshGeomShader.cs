@@ -181,8 +181,6 @@ public class SetupMeshGeomShader
                        bool forceUpdate)
     {
         _cd.Wait();
-        _cd.Reset();
-
         _mr.Reset();
         while (toSetup.Count > 0) { 
             int idx;
@@ -196,12 +194,15 @@ public class SetupMeshGeomShader
                 comp[idx].mat.SetBuffer("_uv", uu[idx]);
                 comp[idx].mat.SetBuffer("_triangles", tt[idx]);
                 comp[idx].mat.SetMatrix("_obj2World", comp[idx].obj2World);
-
-                Graphics.DrawProcedural(comp[idx].mat, new Bounds(comp[idx].pos, new Vector3(10, 10, 10)), MeshTopology.Points, TCount[idx]);
             }
         }
-
+        for(int idx = 0; idx < comp.Length; ++idx)
+        {
+            Graphics.DrawProcedural(comp[idx].mat, new Bounds(comp[idx].pos, new Vector3(10, 10, 10)), MeshTopology.Points, TCount[idx]);
+        }
             
+
+
         for (int i = 0; i < root.Length; ++i)
         {
             if (root == null || root[i] == null) continue;
@@ -209,19 +210,26 @@ public class SetupMeshGeomShader
             if (last_t < maxTime[i] || forceUpdate)
             {
                 toProcess.Enqueue(i);
-                        
             }
         }
-        _root = root;
-        _curTime = t;
-        _maxGrowth = maxGrowth;
-        _growRate = growRate;
-        _diamLengthScale = diamLengthScale;
-        _texScale = texScale;
-        _LOD = LOD;
-        _mr.Set();
+
+        if(toProcess.Count > 0)
+        {
+            _root = root;
+            _curTime = t;
+            _maxGrowth = maxGrowth;
+            _growRate = growRate;
+            _diamLengthScale = diamLengthScale;
+            _texScale = texScale;
+            _LOD = LOD;
+
+            _cd.Reset();
+            _mr.Set();
+            return true;
+        }
         
-        return toProcess.Count > 0;
+        
+        return false;
     }
 
     public bool updateSingle(List<MyTreeNode>[] root, root_component[] comp, float t, float last_t, bool isNight,
@@ -315,6 +323,7 @@ public class SetupMeshGeomShader
     public void OnDestroy()
     {
         isRunning = false;
+        _mr.Set();
         for (int i = 0; i < td.Length; ++i) td[i].Join();
         clearVecs();
     }
