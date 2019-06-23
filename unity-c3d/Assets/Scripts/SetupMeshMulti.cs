@@ -120,7 +120,8 @@ public class SetupMeshMulti {
             int numVertices = 0;
             for (int j = 0; j < root[i].Count; ++j)
             {
-                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 2 : 4;
+                //Starting point + point.Count
+                numVertices += root[i][j].points.Count + 1;
             }
 
             uv.Add(new Vector2[(1+numVertices) * numCircPoints]);

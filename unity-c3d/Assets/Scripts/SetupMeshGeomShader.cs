@@ -143,16 +143,15 @@ public class SetupMeshGeomShader
             for (int j = 0; j < root[i].Count; ++j)
             {
                 //Starting point + point.Count + 2 dummy
-                numVertices += root[i][j].points.Count > 3 ? root[i][j].points.Count + 3 : 5;
+                numVertices += root[i][j].points.Count + 3;
             }
             vertices.Add(new NativeArray<float3>(numVertices + 1, Allocator.Persistent));
             uv.Add(new NativeArray<float2>(numVertices + 1, Allocator.Persistent));
-            triangles.Add(new NativeArray<int>(numVertices, Allocator.Persistent));
+            triangles.Add(new NativeArray<int>(numVertices+1, Allocator.Persistent));
 
             vv.Add(new ComputeBuffer(numVertices + 1, 3*sizeof(float)));
             uu.Add(new ComputeBuffer(numVertices + 1, 2*sizeof(float)));
-            tt.Add(new ComputeBuffer(numVertices, sizeof(int)));
-
+            tt.Add(new ComputeBuffer(numVertices+1, sizeof(int)));
         }
     }
 

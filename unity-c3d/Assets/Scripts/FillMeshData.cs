@@ -207,7 +207,6 @@ public class FillMeshData {
                                              out int TCount)
     {   unsafe
         {
-
             float3* _vertices = (float3*)NativeArrayUnsafeUtility.GetUnsafePtr(vertices);
             {
                 float2* _uv = (float2*)NativeArrayUnsafeUtility.GetUnsafePtr(uv);
@@ -244,7 +243,6 @@ public class FillMeshData {
                             float lastLen = 0;
 
                             float3 curPos = node.startPos;
-
                             int startVsi = vsi;
                             _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
                             _uv->x = node.maxDiameter; _uv->y = 0.0f;
@@ -289,7 +287,6 @@ public class FillMeshData {
 
                                     float maxDiam = minf(node.maxDiameter, diamLengthScale * curLen);
                                     float circLen = (2.0f * Mathf.PI * maxDiam);
-
                                     //store current root point position to processed in the shader: point -> circle
                                     _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
                                     //store current point diameter and vertical texture position
@@ -315,7 +312,6 @@ public class FillMeshData {
                                 idx = maxCount;
                                 mult = last;
                             }
-
                             float3 final = node.points[idx];
                             curPos.x += final.x * mult; curPos.y += final.y * mult; curPos.z += final.z * mult;
                             _vertices->x = curPos.x;
@@ -325,7 +321,6 @@ public class FillMeshData {
                             _vertices += 1;
                             _uv += 1;
                             vsi++;
-                            
                             //Dummy vertex for geometry shader which takes 3 points
                             curPos += final;
                             _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
