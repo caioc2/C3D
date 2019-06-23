@@ -271,6 +271,8 @@ public class SetupMeshGeomShader
                 comp[idx].mat.SetBuffer("_triangles", tt[idx]);
                 comp[idx].mat.SetMatrix("_obj2World", comp[idx].obj2World);
 
+
+
                 Graphics.DrawProcedural(comp[idx].mat, new Bounds(comp[idx].pos, new Vector3(1000000, 1000000, 1000000)), MeshTopology.Points, TCount[idx]);
                 setMeshParticles(comp[idx].ps, isNight, VCount[idx], vertices[idx].Length);
             }

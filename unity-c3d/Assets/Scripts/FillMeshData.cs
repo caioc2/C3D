@@ -74,7 +74,7 @@ public class FillMeshData {
                                     int maxCount = mini(node.points.Count, maxEpoch);
 
                                     if (node.epoch > epoch)
-                                        break;// continue;
+                                        continue;
 
 
                                     MyTreeNode parent = root[node.parentId];
@@ -226,8 +226,8 @@ public class FillMeshData {
                             float last = maxEpochF - (float)maxEpoch;
                             int maxCount = mini(node.points.Count, maxEpoch);
 
-                            if (node.epoch > epoch)
-                                break;// continue;
+                            if (node.epoch > epoch+1)
+                                continue;
 
                             MyTreeNode parent = root[node.parentId];
                             int pId1 = mini(maxi(0, (int)epoch - parent.epoch), parent.points.Count - 1);
@@ -309,6 +309,7 @@ public class FillMeshData {
                                 _triangles += 1;
                             }
 
+                            int lastIdx = maxCount - 1;
                             if (maxCount < node.points.Count)
                             {
                                 Vector3 pos = node.points[maxCount];
@@ -322,21 +323,22 @@ public class FillMeshData {
                                 vsi++;
 
                                 int lastPoint1 = vsi - 1;
-                                *_triangles = lastPoint1 - 2;
+                                *_triangles = lastPoint1 - 1;
                                 _triangles += 1;
                                 tsi++;
+                                lastIdx = maxCount;
                             }
                             //Dummy vertex, in case there are not enough vertices to make a triangle
-                            curPos *= 1.001f;
+                            //curPos += node.points[lastIdx];
                             _vertices->x = curPos.x; _vertices->y = curPos.y; _vertices->z = curPos.z;
                             _uv->x = 0.0001f; _uv->y = nodeLen;
                             _vertices += 1;
                             _uv += 1;
                             vsi++;
-                            int lastPoint = vsi - 1;
+                            //int lastPoint = vsi - 1;
 
-                            *_triangles = lastPoint - 2;
-                            tsi++;
+                            //*_triangles = lastPoint - 4;
+                            //tsi++;
                         }
                         VCount = vsi;
                         TCount = tsi;
