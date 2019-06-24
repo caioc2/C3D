@@ -136,6 +136,7 @@ public class SetupMeshGeomShader
 
         clearVecs();
 
+        int total = 0;
         for (int i = 0; i < root.Length; ++i)
         {
             maxTime[i] = root[i][root[i].Count - 1].epoch + root[i][root[i].Count - 1].points.Count + 1;
@@ -152,7 +153,10 @@ public class SetupMeshGeomShader
             vv.Add(new ComputeBuffer(numVertices + 1, 3*sizeof(float)));
             uu.Add(new ComputeBuffer(numVertices + 1, 2*sizeof(float)));
             tt.Add(new ComputeBuffer(numVertices+1, sizeof(int)));
+
+            total += numVertices * 6;
         }
+        Debug.Log("Tri count: " + total);
     }
 
     void setMeshParticles(ParticleSystem ps, bool isNight, int count, int maxCount)
@@ -223,6 +227,7 @@ public class SetupMeshGeomShader
             _LOD = LOD;
 
             _cd.Reset();
+            for (int i = 0; i < comp.Length - toProcess.Count; ++i) _cd.Signal();
             _mr.Set();
             return true;
         }

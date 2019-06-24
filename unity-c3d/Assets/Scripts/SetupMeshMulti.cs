@@ -211,6 +211,7 @@ public class SetupMeshMulti {
                 _coords = coords;
 
                 _cd.Reset();
+                for (int i = 0; i < comp.Length - toProcess.Count; ++i) _cd.Signal();
                 _mr.Set();
             }
         }
