@@ -2,6 +2,7 @@
 #define USE_GEOM_SHADER
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 using System;
 
 public class root_of_shame : MonoBehaviour {
@@ -197,32 +198,36 @@ public class root_of_shame : MonoBehaviour {
     }
 
     void Reset()
-    {
-        for (int i = 0; i < comp.Length; ++i)
+    { 
+        lock(root) 
         {
-            root[i] = GenerateRootSkeleton.generateSkeleton(comp[i],
-                                                            useGlobalEpoch,
-                                                            minEpoch,
-                                                            maxEpoch,
-                                                            maxIterations,
-                                                            maxLength,
-                                                            levelLengthRatio,
-                                                            meanGrowNoiseDir,
-                                                            varGrowNoiseDir,
-                                                            meanChildNoiseDir,
-                                                            varChildNoiseDir,
-                                                            nonPAngle,
-                                                            meanStep,
-                                                            varStep,
-                                                            LeftRightRate,
-                                                            planar,
-                                                            childRate,
-                                                            maxLevel,
-                                                            maxNodes,
-                                                            minNodesBChild);
+        
+            for (int i = 0; i < comp.Length; ++i)
+            {
+                root[i] = GenerateRootSkeleton.generateSkeleton(comp[i],
+                                                                useGlobalEpoch,
+                                                                minEpoch,
+                                                                maxEpoch,
+                                                                maxIterations,
+                                                                maxLength,
+                                                                levelLengthRatio,
+                                                                meanGrowNoiseDir,
+                                                                varGrowNoiseDir,
+                                                                meanChildNoiseDir,
+                                                                varChildNoiseDir,
+                                                                nonPAngle,
+                                                                meanStep,
+                                                                varStep,
+                                                                LeftRightRate,
+                                                                planar,
+                                                                childRate,
+                                                                maxLevel,
+                                                                maxNodes,
+                                                                minNodesBChild);
+            }
+            setCapacity();
+            t = 0.0f;
         }
-        setCapacity();
-        t = 0.0f;
     }
 
     bool toggle = false;

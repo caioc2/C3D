@@ -40,17 +40,14 @@ public class SetupMeshMulti {
         {
             int nt = Math.Max(1, tCount);
             _mr = new ManualResetEvent(false);
-            _cd = new CountdownEvent(numObj);
-
-            //Start zeroed
-            for (int i = 0; i < numObj; ++i)
-                _cd.Signal();
+            _cd = new CountdownEvent(0);
 
             td = new Thread[nt];
             for (int i = 0; i < nt; i++)
             {
                 td[i] = new Thread(() =>
                 {
+                   
                     ref float curTime = ref _curTime;
                     ref float maxGrowth = ref _maxGrowth;
                     ref float growRate = ref _growRate;
@@ -61,37 +58,44 @@ public class SetupMeshMulti {
                     ref bool run = ref isRunning;
                     while (run)
                     {
-                        int idx = -1;
-                        lock (toProcess)
+                        try
                         {
-                            if (toProcess.Count > 0)
+                            int idx = -1;
+                            lock (toProcess)
                             {
-                                idx = toProcess[0];
-                                toProcess.RemoveAt(0);
+                                if (toProcess.Count > 0)
+                                {
+                                    idx = toProcess[0];
+                                    toProcess.RemoveAt(0);
+                                }
+                            }
+                            if (idx == -1)
+                            {
+                                _mr.WaitOne();
+                            }
+                            else
+                            {
+                                FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], _root[idx], curTime,
+                                                        diamLengthScale,
+                                                        _shape,
+                                                        _coords,
+                                                        texScale,
+                                                        LOD,
+                                                        out VCount[idx],
+                                                        out TCount[idx]);
+                                lock (toSetup)
+                                {
+                                    toSetup.Add(idx);
+                                    _cd.Signal();
+                                }
                             }
                         }
-                        if (idx == -1)
+                        catch (Exception e)
                         {
-                            _mr.WaitOne();
-                        }
-                        else
-                        {
-                            FillMeshData.fillVerticesTriangles(vertices[idx], triangles[idx], uv[idx], _root[idx], curTime,
-                                                    diamLengthScale,
-                                                    _shape,
-                                                    _coords,
-                                                    texScale,
-                                                    LOD,
-                                                    out VCount[idx],
-                                                    out TCount[idx]);
-                            lock (toSetup)
-                            {
-                                toSetup.Add(idx);
-                                _cd.Signal();
-                            }
+                            Debug.LogError("Error thread[ " + i + "]: " + e.Message);
                         }
                     }
-                });
+            });
                 td[i].Start();
             }
         }
@@ -210,8 +214,7 @@ public class SetupMeshMulti {
                 _shape = shape;
                 _coords = coords;
 
-                _cd.Reset();
-                for (int i = 0; i < comp.Length - toProcess.Count; ++i) _cd.Signal();
+                _cd.Reset(toProcess.Count);
                 _mr.Set();
             }
         }
